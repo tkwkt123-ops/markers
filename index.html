@@ -180,6 +180,39 @@
   details summary { cursor: pointer; }
   .toast { position: fixed; left: 50%; bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 90px); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity .25s; z-index: 60; pointer-events: none; white-space: nowrap; }
   .toast.on { opacity: .92; }
+  /* ピン位置（グリーンを上から見た図。上が奥） */
+  .pin { display: inline-grid; grid-template-columns: repeat(3, 22px); grid-auto-rows: 22px; gap: 2px; padding: 6px 8px; border-radius: 50%; background: radial-gradient(circle, #d6e8be 58%, #b9d69b); }
+  .pin button { border: 0; padding: 0; background: transparent; border-radius: 50%; cursor: pointer; font-size: 10px; color: transparent; font-family: inherit; }
+  .pin button.on { background: var(--flag); }
+  .pin.lg { grid-template-columns: repeat(3, 64px); grid-auto-rows: 46px; padding: 16px 26px; }
+  .pin.lg button { font-size: 11px; color: #6b8a5a; }
+  .pin.lg button.on { color: #fff; }
+  .pin-wrap { text-align: center; }
+  .pin-wrap .muted { margin-top: 4px; }
+  .sc tr.memo td { text-align: left; font-family: var(--hand); font-size: 12px; color: var(--ink); padding: 0 8px 7px; border-bottom: 1px solid var(--line); }
+  .sc tr.has-memo td { border-bottom: none; }
+  /* ラウンド中モード */
+  .live-top { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .live-holes { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+  .live-holes::-webkit-scrollbar { display: none; }
+  .live-holes button { flex: none; width: 31px; height: 31px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font-size: 12px; cursor: pointer; padding: 0; }
+  .live-holes button.done { background: #e1edd3; }
+  .live-holes button.on { background: var(--fairway); color: #fff; border-color: var(--fairway); }
+  .live-head { display: flex; justify-content: space-between; align-items: flex-end; margin: 12px 0; gap: 10px; }
+  .live-head h2 { font-size: 32px; }
+  .live-head .r { text-align: right; }
+  .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .live-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .step { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 6px; }
+  .step button { width: 50px; height: 50px; border-radius: 50%; border: none; background: #e1edd3; font-size: 26px; color: var(--fairway); cursor: pointer; }
+  .step b { font-family: var(--mincho); font-size: 34px; }
+  .step.sm { padding: 4px; border-radius: 10px; }
+  .step.sm button { width: 30px; height: 30px; font-size: 18px; }
+  .step.sm b { font-size: 20px; }
+  .two-l { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+  .layout-link { display: block; text-align: center; text-decoration: none; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); font-size: 14px; margin-bottom: 4px; }
+  .live-banner { display: block; width: 100%; margin: 4px 0 12px; padding: 12px; border-radius: 12px; border: none; background: var(--fairway); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .btn:disabled { opacity: .35; }
   #setup { display: none; }
   #setup ol { line-height: 2; font-size: 14px; padding-left: 20px; }
   a { color: var(--fairway); }
@@ -196,6 +229,7 @@
         <div><div class="eyebrow">BALL MARKERS</div><h2>スコアの推移</h2></div>
         <button class="icon-btn" onclick="openSettings()" aria-label="設定">⚙️</button>
       </div>
+      <div id="live-banner"></div>
       <div class="stats" id="stats"></div>
       <div class="trend" id="trend"></div>
       <div class="sec-title"><h3>マーカー</h3><span class="muted" id="count"></span></div>
@@ -225,6 +259,8 @@
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
+const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
+const PINS = ['奥・左', '奥・中', '奥・右', '中・左', 'センター', '中・右', '手前・左', '手前・中', '手前・右'];
 const WEATHER = ['晴れ', '曇り', '雨', '風強い'];
 const TEES = ['レギュラー', 'レディース', 'バック', 'フロント'];
 const CLUBS = ['1W', '3W', '4W', '5W', '7W', 'U4', 'U5', 'U6', '5i', '6i', '7i', '8i', '9i', 'PW', 'AW', 'SW'];
@@ -252,7 +288,7 @@ async function pull() {
   localStorage.setItem(CACHE_KEY, JSON.stringify(db));
 }
 function normalize(d) {
-  d.rounds ||= [];
+  d.rounds ||= []; d.courses ||= [];
   d.rounds.forEach(r => { r.holes ||= []; r.links ||= []; });
   return d;
 }
@@ -342,6 +378,8 @@ function renderHome() {
     <div class="stat best"><b>${best ? total(best) : '–'}</b><span>ベスト</span></div>
     <div class="stat"><b>${avg5}</b><span>直近5回の平均</span></div>
     <div class="stat"><b>${sub100}<small style="font-size:13px">/${yr.length}</small></b><span>${year}年 100切り</span></div>`;
+  const live = JSON.parse(localStorage.getItem(LIVE_KEY) || 'null');
+  $('#live-banner').innerHTML = live ? `<button class="live-banner" onclick="resumeLive()">⛳ ラウンド中：${esc(shortCourse(live.draft.course))}　${live.idx + 1}番ホールから続ける</button>` : '';
   renderTrend(rs, best);
   renderCoins(best);
   $('#count').textContent = `${db.rounds.length}ラウンド`;
@@ -430,13 +468,14 @@ function dirHTML(h) {
 function scorecard(r, from, to, label) {
   const H = r.holes.slice(from, to), par = hasPar(r);
   const det = stats(r).detail;
-  const rows = H.map(h => `<tr>
+  const cols = 3 + (par ? 1 : 0) + (det ? 3 : 0);
+  const rows = H.map(h => `<tr class="${h.memo || h.pin ? 'has-memo' : ''}">
     <td class="h">${h.no}</td>
     ${par ? `<td>${h.par}<div class="sub">${h.yd ? h.yd + 'y' : ''}</div></td>` : ''}
     <td>${mark(h)}</td>
     <td>${h.putts ?? ''}</td>
     ${det ? `<td>${esc(h.club || '')}</td><td>${dirHTML(h)}</td><td class="sub">${[h.ob ? 'OB' + (h.ob > 1 ? h.ob : '') : '', h.bunker ? 'バンカー' + (h.bunker > 1 ? h.bunker : '') : '', h.pen ? 'ペナ' + (h.pen > 1 ? h.pen : '') : ''].filter(Boolean).join(' ')}</td>` : ''}
-  </tr>`).join('');
+  </tr>${h.memo || h.pin ? `<tr class="memo"><td></td><td colspan="${cols}">${h.pin ? `<span class="chip">📍 ${esc(h.pin)}</span> ` : ''}${esc(h.memo || '')}</td></tr>` : ''}`).join('');
   const s = scoreOf(r.holes, from, to), p = H.every(h => h.putts != null) ? sum(H.map(h => h.putts)) : '';
   const ps = par ? sum(H.map(h => h.par)) : null;
   return `<table class="sc"><tr><th>${label}</th>${par ? '<th>PAR</th>' : ''}<th>スコア</th><th>パット</th>${det ? '<th>1打目</th><th>方向</th><th>そのほか</th>' : ''}</tr>${rows}
@@ -472,6 +511,7 @@ function openRound(id) {
     ${scorecard(r, 0, 9, 'OUT')}${scorecard(r, 9, 18, 'IN')}
     ${r.good ? `<div class="note-label">良かったこと</div><div class="note">${esc(r.good)}</div>` : ''}
     ${r.issue ? `<div class="note-label issue">課題・反省</div><div class="note">${esc(r.issue)}</div>` : ''}
+    ${r.layout ? `<a class="layout-link" href="${esc(r.layout)}" target="_blank">ホールのレイアウト（楽天GORA）↗</a>` : ''}
     ${r.links.length ? `<div class="muted" style="margin-top:8px">${r.links.map(u => `<a href="${esc(u)}" target="_blank">${u.includes('notion') ? '以前のNotionのページ' : esc(u)}</a>`).join('　')}</div>` : ''}
     <div class="btns"><button class="btn" onclick="openEdit('${r.id}')">書き直す</button><button class="btn danger" onclick="delRound('${r.id}')">消す</button></div>`);
 }
@@ -515,7 +555,14 @@ function holeHTML(h, i) {
       <div><span class="mini-l">ヤード</span><input inputmode="numeric" value="${h.yd ?? ''}" oninput="setH(${i},'yd',num(this.value)??undefined,true)"></div>
       <div><span class="mini-l">HC</span><input inputmode="numeric" value="${h.hc ?? ''}" oninput="setH(${i},'hc',num(this.value)??undefined,true)"></div>
     </div>
+    <div class="more" style="grid-template-columns:auto 1fr">
+      <div><span class="mini-l">ピン</span>${pinHTML(i, h.pin)}</div>
+      <div><span class="mini-l">メモ</span><input value="${esc(h.memo || '')}" oninput="setH(${i},'memo',this.value,true)" style="text-align:left" placeholder="2打目つま先上がり、右OB など"></div>
+    </div>
   </div>`;
+}
+function pinHTML(i, val, big) {
+  return `<div class="pin ${big ? 'lg' : ''}">${PINS.map(p => `<button type="button" class="${p === val ? 'on' : ''}" title="${p}" onclick="setH(${i},'pin',draft.holes[${i}].pin==='${p}'?undefined:'${p}')">${big ? p.replace('・', '') : ''}</button>`).join('')}</div>`;
 }
 function halfSum(from, to) {
   const H = draft.holes.slice(from, to);
@@ -525,13 +572,14 @@ function halfSum(from, to) {
 }
 function renderEdit() {
   const d = draft;
-  const courses = [...new Set(db.rounds.map(r => r.course))];
+  const courses = [...new Set([...db.courses.map(c => c.name), ...db.rounds.map(r => r.course)])];
   openSheet(`<h3 style="margin-bottom:4px">${d.id ? 'ラウンドを書き直す' : 'ラウンドを記録'}</h3>
     <p class="muted">スコアカードのスクショをClaudeに送れば、代わりに入れることもできます。</p>
+    <button class="live-banner" onclick="startLive()">⛳ 回りながら記録する（1ホールずつ）</button>
     <div class="form">
       <div class="two">
         <div><label>日付</label><input type="date" value="${d.date}" onchange="draft.date=this.value"></div>
-        <div><label>ティー</label><select onchange="draft.tee=this.value"><option value=""></option>${TEES.map(t => `<option ${d.tee === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+        <div><label>ティー</label><select onchange="draft.tee=this.value;if(courseOf(draft.course))fillFromCourse()"><option value=""></option>${TEES.map(t => `<option ${d.tee === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
       </div>
       <label>コース</label><input list="courses" value="${esc(d.course)}" onchange="draft.course=this.value;fillFromCourse()" placeholder="〇〇カントリークラブ">
       <datalist id="courses">${courses.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
@@ -540,17 +588,29 @@ function renderEdit() {
       <div id="holes">${d.holes.slice(0, 9).map(holeHTML).join('')}${halfSum(0, 9)}${d.holes.slice(9).map((h, i) => holeHTML(h, i + 9)).join('')}${halfSum(9, 18)}</div>
       <label>良かったこと</label><textarea oninput="draft.good=this.value">${esc(d.good)}</textarea>
       <label>課題・反省</label><textarea oninput="draft.issue=this.value">${esc(d.issue)}</textarea>
-      <div class="btns"><button class="btn" onclick="${d.id ? `openRound('${d.id}')` : 'closeSheet()'}">やめる</button><button class="btn primary" onclick="saveRound()">保存</button></div>
+      <div class="btns"><button class="btn" onclick="${d.id ? `openRound('${d.id}')` : d.live ? 'closeSheet()' : 'closeSheet()'}">${d.live ? 'あとで続ける' : 'やめる'}</button><button class="btn primary" onclick="saveRound()">保存</button></div>
     </div>`, true);
 }
 // segHTML のボタンは関数式を受け取る
 function setH(i, k, v, quiet) {
   if (v === undefined || v === null || v === '') delete draft.holes[i][k]; else draft.holes[i][k] = v;
+  if (draft.live) saveLiveLocal();
   if (quiet) { const el = $(i < 9 ? '#hs0' : '#hs9'); if (el) el.outerHTML = i < 9 ? halfSum(0, 9) : halfSum(9, 18); }
-  else { const y = $('#sheet').scrollTop; renderEdit(); $('#sheet').scrollTop = y; }
+  else rerender();
 }
-// 前に回ったコースならパー・ヤード・HCを写す
+function rerender() { const y = $('#sheet').scrollTop; (liveMode ? renderLive : renderEdit)(); $('#sheet').scrollTop = y; }
+// 登録してあるコース（db.courses）か、前に回ったコースからパー・ヤード・HCを写す
+function courseOf(name) { name = (name || '').trim(); return db.courses.find(c => c.name === name || (c.aliases || []).includes(name)); }
 function fillFromCourse() {
+  if (draft.live) saveLiveLocal();
+  const c = courseOf(draft.course);
+  if (c) {
+    draft.course = c.name;
+    const yd = c.yards[draft.tee] || c.yards['レギュラー'];
+    draft.holes.forEach((h, i) => { h.par = c.par[i]; if (c.hc) h.hc = c.hc[i]; if (yd) h.yd = yd[i]; });
+    if (c.layout) draft.layout = c.layout;
+    rerender(); toast(`${c.name}のデータを入れました`); return;
+  }
   const prev = sorted().reverse().find(r => r.course === draft.course && hasPar(r) && r.id !== draft.id);
   if (!prev || draft.holes.some(h => h.par)) return;
   prev.holes.forEach((h, i) => { ['par', 'yd', 'hc'].forEach(k => { if (h[k] != null) draft.holes[i][k] = h[k]; }); });
@@ -562,12 +622,73 @@ async function saveRound() {
   if (!d.course.trim()) { toast('コース名を入れてください'); return; }
   if (!d.date) { toast('日付を入れてください'); return; }
   d.course = d.course.trim();
+  const wasLive = d.live; delete d.live;
   const isNew = !d.id;
   if (isNew) { d.id = 'r' + d.date.replace(/-/g, ''); let n = 2; while (db.rounds.some(r => r.id === d.id)) d.id = 'r' + d.date.replace(/-/g, '') + '-' + n++; }
   const t = scoreOf(d.holes, 0, 18);
   const ok = await commit(db => { db.rounds = db.rounds.filter(r => r.id !== d.id); db.rounds.push(d); }, `${isNew ? 'ラウンドを記録' : 'ラウンドを修正'}：${d.date} ${d.course}${t ? ' ' + t : ''}`);
-  if (ok) { toast('保存しました'); openRound(d.id); }
+  if (ok) { if (wasLive) { localStorage.removeItem(LIVE_KEY); liveMode = false; } toast('保存しました'); openRound(d.id); }
+  else if (wasLive) { d.live = true; if (isNew) d.id = null; saveLiveLocal(); }
 }
+
+/* ================= ラウンド中モード ================= */
+let liveMode = false, liveIdx = 0;
+function saveLiveLocal() { localStorage.setItem(LIVE_KEY, JSON.stringify({ draft, idx: liveIdx })); }
+function startLive() {
+  if (!draft.course.trim()) { toast('先にコースを入れてください'); return; }
+  draft.live = true; liveMode = true;
+  liveIdx = draft.holes.findIndex(h => h.score == null); if (liveIdx < 0) liveIdx = 0;
+  saveLiveLocal(); renderLive(); $('#sheet').scrollTop = 0;
+}
+function resumeLive() {
+  const s = JSON.parse(localStorage.getItem(LIVE_KEY) || 'null'); if (!s) return;
+  draft = s.draft; liveIdx = s.idx || 0; liveMode = true; renderLive();
+}
+function stepper(i, k, v, sm) {
+  return `<div class="step ${sm ? 'sm' : ''}"><button type="button" onclick="bump(${i},'${k}',-1)">−</button><b>${v ?? '–'}</b><button type="button" onclick="bump(${i},'${k}',1)">＋</button></div>`;
+}
+// 最初のタップはスコア＝パー、パット＝2から
+function bump(i, k, d) {
+  const h = draft.holes[i];
+  let v = h[k] != null ? h[k] + d : k === 'score' ? (h.par || 4) : k === 'putts' ? 2 : Math.max(0, d);
+  v = Math.max(0, v);
+  setH(i, k, (['ob', 'bunker', 'pen'].includes(k) && !v) ? undefined : v);
+}
+function goHole(k) { if (k < 0 || k > 17) return; liveIdx = k; saveLiveLocal(); renderLive(); $('#sheet').scrollTop = 0; }
+function renderLive() {
+  const i = liveIdx, h = draft.holes[i];
+  const done = draft.holes.filter(x => x.score != null);
+  const sc = sum(done.map(x => x.score));
+  const over = done.length && done.every(x => x.par) ? sc - sum(done.map(x => x.par)) : null;
+  openSheet(`<div class="form">
+    <div class="live-top"><span class="muted">${esc(shortCourse(draft.course))}　${draft.date.replace(/-/g, '/')}</span><span class="muted">ここまで <b style="font-family:var(--mincho);font-size:15px;color:var(--ink)">${done.length ? sc : '–'}</b>${over != null ? `（${over >= 0 ? '+' : ''}${over}）` : ''}</span></div>
+    <div class="live-holes">${draft.holes.map((x, k) => `<button type="button" class="${k === i ? 'on' : ''} ${x.score != null ? 'done' : ''}" onclick="goHole(${k})">${k + 1}</button>`).join('')}</div>
+    <div class="live-head">
+      <div><div class="muted">${i < 9 ? 'OUT' : 'IN'}</div><h2>Hole ${h.no}</h2></div>
+      <div class="r">${segHTML([3, 4, 5], h.par, `v=>setH(${i},'par',v)`, 'sm')}<div class="muted" style="margin-top:4px">${h.yd ? h.yd + 'Y' : ''}${h.hc ? '　HC ' + h.hc : ''}</div></div>
+    </div>
+    ${draft.layout ? `<a class="layout-link" href="${esc(draft.layout)}" target="_blank">ホールのレイアウトを見る（楽天GORA）↗</a>` : ''}
+    <div class="live-grid">
+      <div><label>スコア</label>${stepper(i, 'score', h.score)}</div>
+      <div><label>パット</label>${stepper(i, 'putts', h.putts)}</div>
+    </div>
+    <label>1打目</label>
+    <div class="two-l"><select onchange="setH(${i},'club',this.value,true)"><option value=""></option>${CLUBS.map(c => `<option ${h.club === c ? 'selected' : ''}>${c}</option>`).join('')}</select>${segHTML(['◯', '左', '右'], h.dir, `v=>setH(${i},'dir',v===draft.holes[${i}].dir?undefined:v)`)}</div>
+    <div class="muted" style="margin-top:4px">${h.par === 3 ? '◯＝1オン、左・右＝外した方向' : '◯＝フェアウェイキープ、左・右＝外した方向'}</div>
+    <div class="live-grid3">
+      <div><label>OB</label>${stepper(i, 'ob', h.ob || 0, true)}</div>
+      <div><label>バンカー</label>${stepper(i, 'bunker', h.bunker || 0, true)}</div>
+      <div><label>ペナ</label>${stepper(i, 'pen', h.pen || 0, true)}</div>
+    </div>
+    <label>ピン位置（上が奥）</label>
+    <div class="pin-wrap">${pinHTML(i, h.pin, true)}</div>
+    <label>メモ</label><textarea style="min-height:70px" oninput="setH(${i},'memo',this.value,true)" placeholder="風、ライ、狙い、気づいたこと">${esc(h.memo || '')}</textarea>
+    <div class="btns"><button class="btn" onclick="goHole(${i - 1})" ${i === 0 ? 'disabled' : ''}>← 前</button>${i < 17 ? `<button class="btn primary" onclick="goHole(${i + 1})">次のホール →</button>` : `<button class="btn primary" onclick="liveMode=false;renderEdit();toast('振り返りを書いて保存してください')">上がり</button>`}</div>
+    <div class="btns"><button class="btn" onclick="liveMode=false;renderEdit()">全体を見る・振り返りを書く</button></div>
+    <p class="muted" style="text-align:center;margin-top:12px">入力はこの端末に自動で残ります。閉じても、ホームから続きを開けます。</p>
+  </div>`, true);
+}
+function discardLive() { if (confirm('ラウンド中の入力を消しますか？')) { localStorage.removeItem(LIVE_KEY); renderHome(); } }
 
 /* ================= 傾向 ================= */
 function miniChart(vals, { lowerBetter = true, color = '#5f9a5c', fmt = v => v } = {}) {
