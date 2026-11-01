@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f6f3e4">
+<meta name="theme-color" content="#a5d0ea">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Markers">
 <link rel="apple-touch-icon" href="icon.png">
@@ -14,19 +14,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Maru+Gothic:wght@400;500;700&family=Klee+One:wght@600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #f6f3e4;
-    --card: #fffdf5;
-    --ink: #2f3d35;
-    --ink-soft: #7c877f;
-    --line: #e1dcc7;
-    --grass: #9cc27e;
-    --fairway: #3f7a52;
-    --green: #5f9a5c;
-    --sky: #9cc9de;
-    --sand: #e6d3a3;
-    --sand-deep: #c9ad72;
-    --flag: #d0574d;
-    --gold: #d6ad4f;
+    --paper: #f7f1e3;
+    --card: #fffaf0;
+    --ink: #24404c;
+    --ink-soft: #7a8a90;
+    --line: #e6dcc6;
+    --grass: #8fd3d6;
+    --fairway: #2a8392;
+    --green: #6f9443;
+    --sky: #7fb8dc;
+    --sand: #ecd9b4;
+    --sand-deep: #d9693f;
+    --flag: #d8473a;
+    --gold: #e3a83b;
     --mincho: "Shippori Mincho", "Hiragino Mincho ProN", serif;
     --maru: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
     --hand: "Klee One", "Zen Maru Gothic", sans-serif;
@@ -35,14 +35,14 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; }
   body { background: var(--paper); color: var(--ink); font-family: var(--maru); font-size: 15px; min-height: 100vh; padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 20px); }
-  /* 水彩のにじみ（芝・空・砂） */
-  body::before { content: ""; position: fixed; inset: -10%; z-index: -1; pointer-events: none;
+  /* 夏の空と入道雲（上）から、砂浜のクリーム（下）へ */
+  body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background:
-      radial-gradient(38% 30% at 10% 6%, rgba(156,194,126,.38), transparent 70%),
-      radial-gradient(30% 26% at 92% 16%, rgba(156,201,222,.38), transparent 70%),
-      radial-gradient(36% 28% at 82% 90%, rgba(95,154,92,.22), transparent 70%),
-      radial-gradient(28% 22% at 16% 84%, rgba(230,211,163,.45), transparent 70%);
-    filter: blur(20px); }
+      radial-gradient(34% 13% at 80% 5%, rgba(255,255,255,.95), transparent 70%),
+      radial-gradient(24% 9% at 60% 11%, rgba(255,255,255,.8), transparent 70%),
+      radial-gradient(28% 10% at 12% 9%, rgba(255,255,255,.6), transparent 70%),
+      radial-gradient(45% 16% at 92% 98%, rgba(143,211,214,.35), transparent 70%),
+      linear-gradient(180deg, #9fcde8 0, #cfe6f0 190px, #f7f1e3 430px); }
   button { font-family: inherit; color: inherit; }
   .wrap { max-width: 760px; margin: 0 auto; padding: 0 18px; }
   .eyebrow { font-size: 11px; letter-spacing: .32em; color: var(--fairway); font-weight: 700; }
@@ -56,12 +56,12 @@
   .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; opacity: .7; }
 
   /* タブバー */
-  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--tab-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: rgba(246,243,228,.92); backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; z-index: 20; }
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--tab-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: rgba(247,241,227,.92); backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; z-index: 20; }
   .tabbar button { flex: 1; background: none; border: none; font-size: 10px; color: var(--ink-soft); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; letter-spacing: .05em; }
   .tabbar button .ic { font-size: 19px; line-height: 1; filter: grayscale(1); opacity: .6; }
   .tabbar button.on { color: var(--fairway); font-weight: 700; }
   .tabbar button.on .ic { filter: none; opacity: 1; }
-  .fab { position: fixed; right: max(18px, calc(50% - 360px)); bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px); width: 58px; height: 58px; border-radius: 50%; border: none; background: var(--flag); color: #fff; font-size: 30px; box-shadow: 0 6px 18px rgba(208,87,77,.4); cursor: pointer; z-index: 21; }
+  .fab { position: fixed; right: max(18px, calc(50% - 360px)); bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px); width: 58px; height: 58px; border-radius: 50%; border: none; background: var(--flag); color: #fff; font-size: 30px; box-shadow: 0 6px 18px rgba(216,71,58,.4); cursor: pointer; z-index: 21; }
 
   /* まとめの数字 */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 14px; }
@@ -129,7 +129,7 @@
   .sc { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--card); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
   .sc th { background: var(--fairway); color: #fff; font-weight: 500; font-size: 10px; padding: 6px 2px; letter-spacing: .05em; }
   .sc td { text-align: center; padding: 6px 2px; border-bottom: 1px solid var(--line); }
-  .sc tr.sum td { background: #eef3e3; font-weight: 700; }
+  .sc tr.sum td { background: #e3f3f3; font-weight: 700; }
   .sc td.h { font-weight: 700; color: var(--fairway); }
   .mk { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-family: var(--mincho); font-weight: 700; font-size: 16px; }
   .mk.bd { border: 2px solid var(--flag); border-radius: 50%; color: var(--flag); }
@@ -196,7 +196,7 @@
   .live-holes { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
   .live-holes::-webkit-scrollbar { display: none; }
   .live-holes button { flex: none; width: 31px; height: 31px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font-size: 12px; cursor: pointer; padding: 0; }
-  .live-holes button.done { background: #e1edd3; }
+  .live-holes button.done { background: #dcefef; }
   .live-holes button.on { background: var(--fairway); color: #fff; border-color: var(--fairway); }
   .live-head { display: flex; justify-content: space-between; align-items: flex-end; margin: 12px 0; gap: 10px; }
   .live-head h2 { font-size: 32px; }
@@ -204,7 +204,7 @@
   .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .live-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .step { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 6px; }
-  .step button { width: 50px; height: 50px; border-radius: 50%; border: none; background: #e1edd3; font-size: 26px; color: var(--fairway); cursor: pointer; }
+  .step button { width: 50px; height: 50px; border-radius: 50%; border: none; background: #dcefef; font-size: 26px; color: var(--fairway); cursor: pointer; }
   .step b { font-family: var(--mincho); font-size: 34px; }
   .step.sm { padding: 4px; border-radius: 10px; }
   .step.sm button { width: 30px; height: 30px; font-size: 18px; }
@@ -354,14 +354,15 @@ function stats(r) {
   s.detail = H.some(h => h.dir || h.club || h.ob != null);
   return s;
 }
+// 夏の港町の色：ひまわり → テラコッタ → 海 → 浅瀬 → 空 → ヤシ
 function coinColor(t) {
-  if (t == null) return '#b7b19c';
+  if (t == null) return '#b9b2a2';
   if (t < 90) return 'var(--gold)';
-  if (t < 95) return 'var(--fairway)';
-  if (t < 100) return 'var(--green)';
-  if (t < 105) return '#7fae9c';
-  if (t < 110) return '#6fa5bf';
-  return 'var(--sand-deep)';
+  if (t < 95) return '#d9693f';
+  if (t < 100) return '#2a8392';
+  if (t < 105) return '#4ab0b8';
+  if (t < 110) return '#4a8fc0';
+  return '#8fa35a';
 }
 function bestRound() { let b = null; db.rounds.forEach(r => { const t = total(r); if (t != null && (!b || t < total(b))) b = r; }); return b; }
 
@@ -401,16 +402,16 @@ function renderTrend(rs, best) {
   const ma = rs.map((r, i) => { const w = ts.slice(Math.max(0, i - 4), i + 1); return [x(i), y(sum(w) / w.length)]; });
   const maLine = ma.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
   const area = line + ` L${x(rs.length - 1)} ${H - bot} L${x(0)} ${H - bot} Z`;
-  const guide = (t, label) => t > lo && t < hi ? `<line x1="0" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#c9ad72" stroke-dasharray="4 5" stroke-width="1.2"/><text x="6" y="${y(t) - 5}" font-size="10" fill="#a88f5a">${label}</text>` : '';
+  const guide = (t, label) => t > lo && t < hi ? `<line x1="0" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#d9693f" stroke-opacity=".6" stroke-dasharray="4 5" stroke-width="1.2"/><text x="6" y="${y(t) - 5}" font-size="10" fill="#c45a33">${label}</text>` : '';
   let months = '', prevM = '';
   rs.forEach((r, i) => {
     const m = r.date.slice(0, 7);
     months += `<text x="${x(i)}" y="${H - bot + 18}" font-size="10" text-anchor="middle" fill="#7c877f">${md(r.date)}</text>`;
-    if (m !== prevM) { months += `<text x="${x(i)}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#3f7a52" font-weight="700">${+m.slice(5)}月</text>`; prevM = m; }
+    if (m !== prevM) { months += `<text x="${x(i)}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#2a8392" font-weight="700">${+m.slice(5)}月</text>`; prevM = m; }
   });
   const coins = rs.map((r, i) => {
     const isBest = best && r.id === best.id;
-    const fill = isBest ? '#d6ad4f' : '#3f7a52';
+    const fill = isBest ? '#e3a83b' : '#2a8392';
     return `<g class="coin-pt" onclick="openRound('${r.id}')">
       <circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="16" fill="${fill}" stroke="#fffdf5" stroke-width="2.5"/>
       <circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="12" fill="none" stroke="rgba(255,255,255,.55)" stroke-dasharray="2 2"/>
@@ -419,14 +420,14 @@ function renderTrend(rs, best) {
     </g>`;
   }).join('');
   el.innerHTML = `<div class="trend-scroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-      <defs><linearGradient id="fw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc27e" stop-opacity=".55"/><stop offset="1" stop-color="#9cc27e" stop-opacity=".05"/></linearGradient></defs>
+      <defs><linearGradient id="fw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fd3d6" stop-opacity=".6"/><stop offset="1" stop-color="#8fd3d6" stop-opacity=".05"/></linearGradient></defs>
       ${guide(100, '100切り')}${guide(90, '90切り')}
       <path d="${area}" fill="url(#fw)"/>
-      <path d="${maLine}" fill="none" stroke="#9cc9de" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
-      <path d="${line}" fill="none" stroke="#5f9a5c" stroke-width="2" stroke-linejoin="round"/>
+      <path d="${maLine}" fill="none" stroke="#f0a36e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+      <path d="${line}" fill="none" stroke="#2a8392" stroke-width="2" stroke-linejoin="round"/>
       ${months}${coins}
     </svg></div>
-    <div class="trend-legend"><span>● スコア（上ほど少ない）</span><span style="color:#6fa5bf">━ 直近5回の平均</span><span><i></i>目標ライン</span></div>`;
+    <div class="trend-legend"><span>● スコア（上ほど少ない）</span><span style="color:#e08a52">━ 直近5回の平均</span><span><i></i>目標ライン</span></div>`;
   const sc = el.querySelector('.trend-scroll'); sc.scrollLeft = sc.scrollWidth;
 }
 
@@ -495,7 +496,7 @@ function openRound(id) {
     s.detail && `<div class="kpi"><b>${s.ob}</b><span>OB</span></div>`,
     s.detail && `<div class="kpi"><b>${s.bunker}・${s.pen}</b><span>バンカー・ペナ</span></div>`,
   ].filter(Boolean).join('');
-  const D = s.dist, DC = { bd: ['バーディ以下', 'var(--flag)'], par: ['パー', 'var(--fairway)'], bg: ['ボギー', '#7fb3cc'], db: ['ダボ', 'var(--sand-deep)'], tp: ['トリプル以上', '#9a7d4c'] };
+  const D = s.dist, DC = { bd: ['バーディ以下', 'var(--flag)'], par: ['パー', 'var(--fairway)'], bg: ['ボギー', '#7fb3cc'], db: ['ダボ', 'var(--sand-deep)'], tp: ['トリプル以上', '#8a4b2e'] };
   const dist = D ? `<div class="note-label">スコアの内訳</div>
     <div class="dist">${Object.keys(DC).filter(k => D[k]).map(k => `<div style="flex:${D[k]};background:${DC[k][1]}">${D[k]}</div>`).join('')}</div>
     <div class="dist-legend">${Object.keys(DC).map(k => `<span><i style="background:${DC[k][1]}"></i>${DC[k][0]} ${D[k]}</span>`).join('')}</div>` : '';
@@ -691,7 +692,7 @@ function renderLive() {
 function discardLive() { if (confirm('ラウンド中の入力を消しますか？')) { localStorage.removeItem(LIVE_KEY); renderHome(); } }
 
 /* ================= 傾向 ================= */
-function miniChart(vals, { lowerBetter = true, color = '#5f9a5c', fmt = v => v } = {}) {
+function miniChart(vals, { lowerBetter = true, color = '#2a8392', fmt = v => v } = {}) {
   const pts = vals.map((v, i) => [i, v]).filter(p => p[1] != null);
   if (pts.length < 2) return '<div class="muted" style="padding:10px 0">記録が2回分たまると線が出ます</div>';
   const W = 320, H = 90, pad = 10;
@@ -721,7 +722,7 @@ function renderTendency() {
   // パー3・4・5ごとの平均オーバー
   const by = { 3: [], 4: [], 5: [] };
   rs.forEach(r => { if (hasPar(r)) r.holes.forEach(h => by[h.par]?.push(h.score - h.par)); });
-  const parRows = [3, 4, 5].filter(p => by[p].length).map(p => { const a = sum(by[p]) / by[p].length; return `<div class="bar"><span>パー${p}</span><div class="track"><div class="fill" style="width:${Math.min(100, a / 3 * 100)}%;background:${['', '', '', '#9cc9de', '#5f9a5c', '#c9ad72'][p]}"></div></div><b>+${a.toFixed(2)}</b></div>`; }).join('');
+  const parRows = [3, 4, 5].filter(p => by[p].length).map(p => { const a = sum(by[p]) / by[p].length; return `<div class="bar"><span>パー${p}</span><div class="track"><div class="fill" style="width:${Math.min(100, a / 3 * 100)}%;background:${['', '', '', '#7fb8dc', '#2a8392', '#d9693f'][p]}"></div></div><b>+${a.toFixed(2)}</b></div>`; }).join('');
   // コースごと
   const cs = {};
   rs.forEach(r => { const k = shortCourse(r.course); (cs[k] ||= []).push(total(r)); });
@@ -729,10 +730,10 @@ function renderTendency() {
     .map(([c, v]) => `<tr><td>${esc(c)}</td><td class="muted" style="text-align:right">${v.length}回</td><td class="n">${Math.min(...v)}</td></tr>`).join('');
   $('#tendency').innerHTML =
     card('スコア', rs.map(total), {}, '打') +
-    card('パット数', rs.map(putts), { color: '#6fa5bf' }, '') +
-    (ST.some(s => s.fw) ? card('FWキープ率', ST.map(s => pctv(s.fw)), { lowerBetter: false, color: '#3f7a52' }, '%') : '') +
-    (ST.some(s => s.gir != null) ? card('パーオン', ST.map(s => s.gir ?? null), { lowerBetter: false, color: '#d0574d' }, '回') : '') +
-    (ST.some(s => s.dist) ? card('トリプル以上のホール', ST.map(s => s.dist ? s.dist.tp : null), { color: '#9a7d4c' }, '回') : '') +
+    card('パット数', rs.map(putts), { color: '#4a8fc0' }, '') +
+    (ST.some(s => s.fw) ? card('FWキープ率', ST.map(s => pctv(s.fw)), { lowerBetter: false, color: '#6f9443' }, '%') : '') +
+    (ST.some(s => s.gir != null) ? card('パーオン', ST.map(s => s.gir ?? null), { lowerBetter: false, color: '#d8473a' }, '回') : '') +
+    (ST.some(s => s.dist) ? card('トリプル以上のホール', ST.map(s => s.dist ? s.dist.tp : null), { color: '#d9693f' }, '回') : '') +
     (parRows ? `<div class="card"><h4>パーごとの平均（パーより何打多いか）</h4><div class="bars">${parRows}</div><p class="muted" style="margin:8px 0 0">パーが入っているラウンドだけで計算しています</p></div>` : '') +
     `<div class="card"><h4>コースごと</h4><table class="courses"><tr class="muted"><td>コース</td><td style="text-align:right">回数</td><td class="n" style="font-family:var(--maru);font-weight:400">ベスト</td></tr>${courseRows}</table></div>`;
 }
