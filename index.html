@@ -232,6 +232,8 @@
       <div id="live-banner"></div>
       <div class="stats" id="stats"></div>
       <div class="trend" id="trend"></div>
+      <div class="sec-title" style="margin-top:18px"><h3>パット数</h3><span class="muted">少ないほど上</span></div>
+      <div class="trend" id="trend-putts"></div>
       <div class="sec-title"><h3>マーカー</h3><span class="muted" id="count"></span></div>
       <div class="coins" id="coins"></div>
     </div>
@@ -380,16 +382,16 @@ function renderHome() {
   const best = bestRound();
   const last5 = rs.slice(-5).map(total);
   const avg5 = last5.length ? (sum(last5) / last5.length).toFixed(1) : '–';
-  const year = new Date().getFullYear();
-  const yr = rs.filter(r => r.date.startsWith(year));
-  const sub100 = yr.filter(r => total(r) < 100).length;
+  const p5 = rs.map(putts).filter(v => v != null).slice(-5);
+  const avgP = p5.length ? (sum(p5) / p5.length).toFixed(1) : '–';
   $('#stats').innerHTML = `
     <div class="stat best"><b>${best ? total(best) : '–'}</b><span>ベスト</span></div>
     <div class="stat"><b>${avg5}</b><span>直近5回の平均</span></div>
-    <div class="stat"><b>${sub100}<small style="font-size:13px">/${yr.length}</small></b><span>${year}年 100切り</span></div>`;
-  const live = JSON.parse(localStorage.getItem(LIVE_KEY) || 'null');
+    <div class="stat"><b>${avgP}</b><span>直近5回のパット</span></div>`;
+  const live = liveState();
   $('#live-banner').innerHTML = live ? `<button class="live-banner" onclick="resumeLive()">⛳ ラウンド中：${esc(shortCourse(live.draft.course))}　${live.idx + 1}番ホールから続ける</button>` : '';
   renderTrend(rs, best);
+  renderTrend(rs, best, PUTTS_CHART);
   renderCoins(best);
   $('#count').textContent = `${db.rounds.length}ラウンド`;
 }
@@ -397,21 +399,25 @@ function renderHome() {
 // グラフに出す範囲：直近10回／今年／全部（端末に覚えておく）
 let trendRange = localStorage.getItem('markers-range') || 'all';
 function setRange(v) { trendRange = v; localStorage.setItem('markers-range', v); renderHome(); }
-function renderTrend(all, best) {
-  const el = $('#trend');
+const SCORE_CHART = { el: '#trend', val: total, guides: [[100, '100'], [90, '90']], color: t => coinColor(t), markers: true, pad: [88, 102], legend: '100・90', tabs: true };
+const PUTTS_CHART = { el: '#trend-putts', val: r => putts(r), guides: [[36, '36（毎ホール2パット）']], color: () => '#6fb0aa', markers: false, pad: [34, 38], legend: '36', tabs: false };
+function renderTrend(all, best, o = SCORE_CHART) {
+  const el = $(o.el);
   if (!all.length) { el.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
   const year = String(new Date().getFullYear());
-  const rs = trendRange === '10' ? all.slice(-10) : trendRange === 'year' ? all.filter(r => r.date.startsWith(year)) : all;
+  const ranged = trendRange === '10' ? all.slice(-10) : trendRange === 'year' ? all.filter(r => r.date.startsWith(year)) : all;
+  const rs = ranged.filter(r => o.val(r) != null);
+  if (!rs.length) { el.innerHTML = '<div class="empty">この期間の記録がありません</div>'; return; }
   const n = rs.length;
   const padL = 26, padR = 26, H = 260, top = 30, bot = 46;
   const cw = el.clientWidth || 340;
   // 全部が画面に収まるように間隔を決める（狭すぎるときだけ横にスクロール）
   const step = n > 1 ? Math.max(15, (cw - padL - padR) / (n - 1)) : 0;
   const W = Math.max(cw, padL + padR + step * (n - 1));
-  const big = step >= 40;   // 間隔が広いときはマーカー、狭いときは小さな点＋数字
-  const ts = rs.map(total);
+  const big = o.markers && step >= 40;   // 間隔が広いときはマーカー、狭いときは小さな点＋数字
+  const ts = rs.map(o.val);
   const avg = sum(ts) / n;
-  const lo = Math.min(...ts, 88) - 3, hi = Math.max(...ts, 102) + 3;
+  const lo = Math.min(...ts, o.pad[0]) - 3, hi = Math.max(...ts, o.pad[1]) + 3;
   // 少ない打数ほど上に
   const y = t => top + (t - lo) / (hi - lo) * (H - top - bot);
   const x = i => n === 1 ? W / 2 : padL + i * step;
@@ -420,16 +426,16 @@ function renderTrend(all, best) {
   const area = line + ` L${x(n - 1)} ${H - bot} L${x(0)} ${H - bot} Z`;
   const guide = (t, label) => t > lo && t < hi ? `<line x1="0" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#7d8682" stroke-opacity=".5" stroke-dasharray="4 5" stroke-width="1"/><text x="${W - 4}" y="${y(t) - 4}" font-size="9.5" fill="#7d8682" text-anchor="end">${label}</text>` : '';
   const avgLine = `<line x1="0" x2="${W}" y1="${y(avg)}" y2="${y(avg)}" stroke="#d8895a" stroke-width="2.2" opacity=".85"/>`;
-  let months = '', prevM = '';
+  let months = '', prevM = '', lastMX = -99;
   const every = Math.ceil(28 / step);  // 日付は重ならない間隔で
   rs.forEach((r, i) => {
     const m = r.date.slice(0, 7);
     if (i % every === 0 || i === n - 1) months += `<text x="${x(i)}" y="${H - bot + 17}" font-size="9.5" text-anchor="middle" fill="#7d8682">${md(r.date)}</text>`;
-    if (m !== prevM) { months += `<text x="${x(i)}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#4686a5" font-weight="700">${+m.slice(5)}月</text>`; prevM = m; }
+    if (m !== prevM) { if (x(i) - lastMX >= 30) { months += `<text x="${x(i)}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#4686a5" font-weight="700">${+m.slice(5)}月</text>`; lastMX = x(i); } prevM = m; }
   });
   const pt = rs.map((r, i) => {
     const isBest = best && r.id === best.id;
-    const fill = coinColor(ts[i]);
+    const fill = o.color(ts[i]);
     const [px, py] = pts[i];
     if (big) return `<g class="coin-pt" onclick="openRound('${r.id}')">
       <circle cx="${px + 1.6}" cy="${py + 1.6}" r="17" fill="rgba(46,68,72,.16)"/>
@@ -444,20 +450,20 @@ function renderTrend(all, best) {
     return `<g class="coin-pt" onclick="openRound('${r.id}')">
       <circle cx="${px}" cy="${py}" r="11" fill="transparent"/>
       <circle cx="${px}" cy="${py}" r="5.5" fill="${fill}" stroke="#f8f3e6" stroke-width="1.6"/>
-      <text x="${px}" y="${up ? py - 9 : py + 17}" font-size="10" font-weight="700" text-anchor="middle" fill="${isBest ? '#c08a2c' : '#2e4448'}" font-family="Shippori Mincho, serif">${isBest ? '★' : ''}${ts[i]}</text>
+      <text x="${px}" y="${up ? py - 9 : py + 17}" font-size="10" font-weight="700" text-anchor="middle" fill="${isBest && o.markers ? '#c08a2c' : '#2e4448'}" font-family="Shippori Mincho, serif">${isBest && o.markers ? '★' : ''}${ts[i]}</text>
     </g>`;
   }).join('');
   const chip = (v, l) => `<button class="${trendRange === v ? 'on' : ''}" onclick="setRange('${v}')">${l}</button>`;
-  el.innerHTML = `<div class="trend-tabs seg sm">${chip('10', '直近10回')}${chip('year', '今年')}${chip('all', '全部')}<span class="muted" style="margin-left:auto">${n}回</span></div>
+  el.innerHTML = `${o.tabs ? `<div class="trend-tabs seg sm">${chip('10', '直近10回')}${chip('year', '今年')}${chip('all', '全部')}<span class="muted" style="margin-left:auto">${n}回</span></div>` : ''}
     <div class="trend-scroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-      <defs><linearGradient id="fw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8dc3bc" stop-opacity=".55"/><stop offset="1" stop-color="#8dc3bc" stop-opacity=".05"/></linearGradient></defs>
-      ${guide(100, '100')}${guide(90, '90')}
-      <path d="${area}" fill="url(#fw)"/>
+      <defs><linearGradient id="fw${o.tabs ? '' : 'p'}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8dc3bc" stop-opacity=".55"/><stop offset="1" stop-color="#8dc3bc" stop-opacity=".05"/></linearGradient></defs>
+      ${o.guides.map(g => guide(...g)).join('')}
+      <path d="${area}" fill="url(#fw${o.tabs ? '' : 'p'})"/>
       ${avgLine}
       <path d="${line}" fill="none" stroke="#4686a5" stroke-width="${big ? 2 : 1.6}" stroke-linejoin="round"/>
       ${months}${pt}
     </svg></div>
-    <div class="trend-legend"><span>● スコア（上ほど少ない）</span><span style="color:#c8693f">━ 平均 <b>${avg.toFixed(1)}</b></span><span><i></i>100・90</span></div>`;
+    <div class="trend-legend"><span>● ${o.tabs ? 'スコア（上ほど少ない）' : 'パット（上ほど少ない）'}</span><span style="color:#c8693f">━ 平均 <b>${avg.toFixed(1)}</b></span><span><i></i>${o.legend}</span></div>`;
   const sc = el.querySelector('.trend-scroll'); sc.scrollLeft = sc.scrollWidth;
 }
 
@@ -513,7 +519,7 @@ function mark(h) {
 }
 function dirHTML(h) {
   if (!h.dir) return '';
-  const m = { '◯': ['ok', '◯'], '左': ['l', '↖ 左'], '右': ['r', '右 ↗'] }[h.dir] || ['', h.dir];
+  const m = { '◯': ['ok', '◯'], '左': ['l', '↖ 左'], '右': ['r', '右 ↗'], '手前': ['l', '↓ 手前'], '奥': ['r', '↑ 奥'] }[h.dir] || ['', h.dir];
   return `<span class="dir ${m[0]}">${m[1]}</span>`;
 }
 function scorecard(r, from, to, label) {
@@ -529,9 +535,10 @@ function scorecard(r, from, to, label) {
   </tr>${h.memo || h.pin ? `<tr class="memo"><td></td><td colspan="${cols}">${h.pin ? `<span class="chip">📍 ${esc(h.pin)}</span> ` : ''}${esc(h.memo || '')}</td></tr>` : ''}`).join('');
   const s = scoreOf(r.holes, from, to), p = H.every(h => h.putts != null) ? sum(H.map(h => h.putts)) : '';
   const ps = par ? sum(H.map(h => h.par)) : null;
-  return `<table class="sc"><tr><th>${label}</th>${par ? '<th>PAR</th>' : ''}<th>スコア</th><th>パット</th>${det ? '<th>1打目</th><th>方向</th><th>そのほか</th>' : ''}</tr>${rows}
+  return `<table class="sc"><tr><th style="${label.length > 3 ? 'font-size:9px' : ''}">${esc(label)}</th>${par ? '<th>PAR</th>' : ''}<th>スコア</th><th>パット</th>${det ? '<th>1打目</th><th>方向</th><th>そのほか</th>' : ''}</tr>${rows}
     <tr class="sum"><td>計</td>${par ? `<td>${ps}</td>` : ''}<td>${s ?? ''}${par && s != null ? `<span class="sub"> ${s - ps >= 0 ? '+' : ''}${s - ps}</span>` : ''}</td><td>${p}</td>${det ? '<td colspan="3"></td>' : ''}</tr></table>`;
 }
+const nine = (r, k) => (r.nines && r.nines[k]) || (k ? 'IN' : 'OUT');
 function openRound(id) {
   const r = db.rounds.find(x => x.id === id); if (!r) return;
   const s = stats(r), t = total(r), p = putts(r), best = bestRound();
@@ -554,12 +561,12 @@ function openRound(id) {
   openSheet(`
     <div class="detail-head">${coinHTML(r, best, true)}
       <div><div class="muted">${r.date.replace(/-/g, '/')}</div><h3>${esc(r.course)}</h3>
-        <div class="halves"><span>OUT <b>${outS(r) ?? '–'}</b></span><span>IN <b>${inS(r) ?? '–'}</b></span>${s.par ? `<span>${t - s.par >= 0 ? '+' : ''}${t - s.par}</span>` : ''}</div>
+        <div class="halves">${(r.startIn ? [[1, inS(r)], [0, outS(r)]] : [[0, outS(r)], [1, inS(r)]]).map(([k, v]) => `<span>${esc(nine(r, k))} <b>${v ?? '–'}</b></span>`).join('')}${s.par ? `<span>${t - s.par >= 0 ? '+' : ''}${t - s.par}</span>` : ''}</div>
         <div class="chips">${chips}</div></div></div>
     ${kpis ? `<div class="kpis">${kpis}</div>` : ''}
     ${dist}
     <div style="height:12px"></div>
-    ${scorecard(r, 0, 9, 'OUT')}${scorecard(r, 9, 18, 'IN')}
+    ${r.startIn ? scorecard(r, 9, 18, nine(r, 1)) + scorecard(r, 0, 9, nine(r, 0)) : scorecard(r, 0, 9, nine(r, 0)) + scorecard(r, 9, 18, nine(r, 1))}
     ${r.good ? `<div class="note-label">良かったこと</div><div class="note">${esc(r.good)}</div>` : ''}
     ${r.issue ? `<div class="note-label issue">課題・反省</div><div class="note">${esc(r.issue)}</div>` : ''}
     ${r.layout ? `<a class="layout-link" href="${esc(r.layout)}" target="_blank">ホールのレイアウト（楽天GORA）↗</a>` : ''}
@@ -577,7 +584,7 @@ async function delRound(id) {
 let draft = null;
 function blankHoles() { return Array.from({ length: 18 }, (_, i) => ({ no: i + 1 })); }
 function openEdit(id) {
-  if (!id && localStorage.getItem(LIVE_KEY)) { resumeLive(); toast('ラウンド中の続きを開きました'); return; }
+  if (!id && liveState()) { resumeLive(); toast('ラウンド中の続きを開きました'); return; }
   const r = id && db.rounds.find(x => x.id === id);
   draft = r ? JSON.parse(JSON.stringify(r)) : { id: null, date: new Date().toLocaleDateString('sv-SE'), course: '', tee: 'レギュラー', weather: '', holes: blankHoles(), good: '', issue: '', links: [] };
   if (draft.holes.length !== 18) draft.holes = blankHoles();
@@ -588,7 +595,7 @@ function segHTML(list, val, fn, cls = '') {
 }
 function holeHTML(h, i) {
   const par = h.par;
-  const dirs = par === 3 ? ['◯', '左', '右'] : ['◯', '左', '右'];
+  const dirs = par === 3 ? ['◯', '左', '右', '手前', '奥'] : ['◯', '左', '右'];
   return `<div class="hole">
     <div class="top">
       <span class="no">${h.no}</span>
@@ -686,6 +693,8 @@ async function saveRound() {
 
 /* ================= ラウンド中モード ================= */
 let liveMode = false, liveIdx = 0;
+// 端末に残っているラウンド中の記録（壊れていたら無視）
+function liveState() { try { const s = JSON.parse(localStorage.getItem(LIVE_KEY) || 'null'); return s && s.draft && Array.isArray(s.draft.holes) ? s : null; } catch (e) { return null; } }
 function saveLiveLocal() {
   if (!draft) return;
   localStorage.setItem(LIVE_KEY, JSON.stringify({ draft, idx: liveIdx, at: new Date().toISOString() }));
@@ -719,7 +728,7 @@ async function clearRemoteLive() {
 }
 // スマホとクラウドの新しいほうを使う
 async function syncLiveFromRemote() {
-  const remote = await fetchRemoteLive(); if (!remote) return;
+  const remote = await fetchRemoteLive(); if (!remote || !remote.draft || !Array.isArray(remote.draft.holes)) return;
   const local = JSON.parse(localStorage.getItem(LIVE_KEY) || 'null');
   if (!local || (remote.at || '') > (local.at || '')) { localStorage.setItem(LIVE_KEY, JSON.stringify(remote)); liveSyncedHash = localStorage.getItem(LIVE_KEY); renderHome(); }
 }
@@ -737,7 +746,7 @@ function startLive() {
   saveLiveLocal(); renderLive(); $('#sheet').scrollTop = 0;
 }
 function resumeLive() {
-  const s = JSON.parse(localStorage.getItem(LIVE_KEY) || 'null'); if (!s) return;
+  const s = liveState(); if (!s) return;
   draft = s.draft; liveIdx = s.idx || 0; liveMode = true; renderLive();
 }
 function stepper(i, k, v, sm) {
@@ -769,8 +778,8 @@ function renderLive() {
       <div><label>パット</label>${stepper(i, 'putts', h.putts)}</div>
     </div>
     <label>1打目</label>
-    <div class="two-l"><select onchange="setH(${i},'club',this.value,true)"><option value=""></option>${CLUBS.map(c => `<option ${h.club === c ? 'selected' : ''}>${c}</option>`).join('')}</select>${segHTML(['◯', '左', '右'], h.dir, `v=>setH(${i},'dir',v===draft.holes[${i}].dir?undefined:v)`)}</div>
-    <div class="muted" style="margin-top:4px">${h.par === 3 ? '◯＝1オン、左・右＝外した方向' : '◯＝フェアウェイキープ、左・右＝外した方向'}</div>
+    <div class="two-l"><select onchange="setH(${i},'club',this.value,true)"><option value=""></option>${CLUBS.map(c => `<option ${h.club === c ? 'selected' : ''}>${c}</option>`).join('')}</select>${segHTML(h.par === 3 ? ['◯', '左', '右', '手前', '奥'] : ['◯', '左', '右'], h.dir, `v=>setH(${i},'dir',v===draft.holes[${i}].dir?undefined:v)`)}</div>
+    <div class="muted" style="margin-top:4px">${h.par === 3 ? '◯＝1オン、左・右・手前・奥＝外した方向' : '◯＝フェアウェイキープ、左・右＝外した方向'}</div>
     <div class="live-grid3">
       <div><label>OB</label>${stepper(i, 'ob', h.ob || 0, true)}</div>
       <div><label>バンカー</label>${stepper(i, 'bunker', h.bunker || 0, true)}</div>
