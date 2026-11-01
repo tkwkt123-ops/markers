@@ -100,7 +100,7 @@
   .card h4 { margin: 0 0 2px; font-size: 13px; letter-spacing: .1em; }
   .card .now { font-family: var(--mincho); font-size: 22px; font-weight: 700; }
   .card .row { display: flex; justify-content: space-between; align-items: baseline; }
-  .mini { width: 100%; height: 90px; display: block; margin-top: 6px; }
+  .mini { width: 100%; height: auto; display: block; margin-top: 6px; }
   .bars { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
   .bar { display: grid; grid-template-columns: 70px 1fr 44px; gap: 8px; align-items: center; font-size: 12px; }
   .bar .track { height: 12px; background: #efe9d6; border-radius: 6px; overflow: hidden; }
@@ -849,20 +849,35 @@ async function discardLive() {
 }
 
 /* ================= 傾向 ================= */
-function miniChart(vals, { lowerBetter = true, color = '#4686a5', fmt = v => v } = {}) {
+// 区切りのいい目盛り（3〜5本）
+function niceTicks(lo, hi) {
+  const span = Math.max(hi - lo, 1);
+  const step = [1, 2, 5, 10, 20, 25, 50].find(st => span / st <= 4) || 100;
+  let a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step;
+  if (a === b) b = a + step;
+  const t = []; for (let v = a; v <= b + 1e-9; v += step) t.push(v);
+  return t;
+}
+function miniChart(vals, { lowerBetter = true, color = '#4686a5', fmt = v => v, unit = '', dates = [] } = {}) {
   const pts = vals.map((v, i) => [i, v]).filter(p => p[1] != null);
   if (pts.length < 2) return '<div class="muted" style="padding:10px 0">記録が2回分たまると線が出ます</div>';
-  const W = 320, H = 90, pad = 10;
-  const ys = pts.map(p => p[1]), lo = Math.min(...ys), hi = Math.max(...ys), span = hi - lo || 1;
-  const x = i => pad + i / (vals.length - 1 || 1) * (W - pad * 2);
-  const y = v => H - pad - (v - lo) / span * (H - pad * 2);  // どのグラフも、数が少ないほど下
+  const W = 340, H = 150, padL = 36, padR = 10, top = 10, bot = 26;
+  const ys = pts.map(p => p[1]), ticks = niceTicks(Math.min(...ys), Math.max(...ys));
+  const lo = ticks[0], hi = ticks[ticks.length - 1];
+  const x = i => padL + i / (vals.length - 1 || 1) * (W - padL - padR);
+  const y = v => top + (hi - v) / (hi - lo) * (H - top - bot);  // どのグラフも、数が少ないほど下
   const d = pts.map((p, k) => (k ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
   const last = pts[pts.length - 1];
-  return `<svg class="mini" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+  const grid = ticks.map(t => `<line x1="${padL}" x2="${W - padR}" y1="${y(t)}" y2="${y(t)}" stroke="#ded6c0" stroke-width="1" ${t === lo ? '' : 'stroke-dasharray="3 4"'}/>
+    <text x="${padL - 6}" y="${y(t) + 3.5}" font-size="10" fill="#7d8682" text-anchor="end">${fmt(t)}${unit}</text>`).join('');
+  let months = '', prev = '', lastX = -99;
+  dates.forEach((dt, i) => { const m = dt.slice(0, 7); if (m !== prev) { if (x(i) - lastX >= 26) { months += `<text x="${x(i)}" y="${H - 8}" font-size="10" fill="#4686a5" text-anchor="middle">${+m.slice(5)}月</text>`; lastX = x(i); } prev = m; } });
+  return `<svg class="mini" viewBox="0 0 ${W} ${H}">
+    ${grid}${months}
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
     ${pts.map(p => `<circle cx="${x(p[0])}" cy="${y(p[1])}" r="2.6" fill="${color}"/>`).join('')}
     <circle cx="${x(last[0])}" cy="${y(last[1])}" r="4.5" fill="${color}" stroke="#fff" stroke-width="1.5"/>
-  </svg><div class="row muted"><span>ベスト ${fmt(lowerBetter ? lo : hi)}</span><span>ワースト ${fmt(lowerBetter ? hi : lo)}</span></div>`;
+  </svg><div class="row muted"><span>ベスト ${fmt(lowerBetter ? Math.min(...ys) : Math.max(...ys))}${unit}</span><span>ワースト ${fmt(lowerBetter ? Math.max(...ys) : Math.min(...ys))}${unit}</span></div>`;
 }
 function renderTendency() {
   const rs = sorted().filter(r => total(r) != null);
@@ -873,7 +888,7 @@ function renderTendency() {
   const card = (title, vals, opt = {}, unit = '') => {
     const l = lastOf(vals), a = avgOf(vals), f = opt.fmt || (v => v);
     return `<div class="card"><div class="row"><h4>${title}</h4><span class="muted">直近5回の平均 ${a == null ? '–' : f(+a.toFixed(1))}${unit}</span></div>
-      <div class="now">${l == null ? '–' : f(l)}<small style="font-size:12px;font-family:var(--maru)"> ${unit}（最新）</small></div>${miniChart(vals, opt)}</div>`;
+      <div class="now">${l == null ? '–' : f(l)}<small style="font-size:12px;font-family:var(--maru)"> ${unit}（最新）</small></div>${miniChart(vals, { ...opt, unit: unit === '%' ? '%' : '', dates: rs.map(r => r.date) })}</div>`;
   };
   const pctv = x => x ? Math.round(x[0] / x[1] * 100) : null;
   // パー3・4・5ごとの平均オーバー
