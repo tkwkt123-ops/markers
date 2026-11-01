@@ -221,13 +221,34 @@
   .layout-link { display: block; text-align: center; text-decoration: none; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); font-size: 14px; margin-bottom: 4px; }
   .live-banner { display: block; width: 100%; margin: 4px 0 12px; padding: 12px; border-radius: 12px; border: none; background: var(--fairway); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
   .btn:disabled { opacity: .35; }
+  /* 押したことが分かるように */
+  button, .coin-wrap, .coin-pt, .layout-link, .live-banner { transition: transform .12s ease, filter .12s ease, background-color .15s ease, color .15s ease, box-shadow .12s ease; }
+  button:active:not(:disabled), .layout-link:active, .live-banner:active { transform: scale(.95); filter: brightness(.9); }
+  .fab:active { transform: scale(.9); box-shadow: 1px 1px 0 rgba(36,64,76,.16); }
+  .tabbar button:active .ic { transform: scale(.85); }
+  .coin-wrap:active { transform: scale(.94); }
+  .coin-pt:active { opacity: .6; }
+  .seg button.on { box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); font-weight: 700; }
+  .seg button.on::before { content: "✓ "; font-size: .85em; }
+  .seg.sm button.on::before { content: ""; }
+  .pin button:active { background: rgba(207,111,69,.35); }
+  .btn.busy { opacity: .7; pointer-events: none; }
+  .btn.busy::after { content: ""; display: inline-block; width: 12px; height: 12px; margin-left: 8px; vertical-align: -1px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); color: var(--flag); } 100% { transform: scale(1); } }
+  .step b.pop { display: inline-block; animation: pop .28s ease; }
+  @keyframes slideL { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+  @keyframes slideR { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+  .slide-l { animation: slideL .22s ease; }
+  .slide-r { animation: slideR .22s ease; }
+  .toast.ok::before { content: "✓ "; }
   #setup { display: none; }
   #setup ol { line-height: 2; font-size: 14px; padding-left: 20px; }
   a { color: var(--fairway); }
   .empty { text-align: center; color: var(--ink-soft); padding: 40px 0; font-size: 13px; }
 </style>
 </head>
-<body>
+<body ontouchstart="">
 <div id="setup" class="wrap"></div>
 
 <div id="app" style="display:none">
@@ -334,7 +355,13 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sum = a => a.reduce((x, y) => x + y, 0);
 const num = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
-function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), 2200); }
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.toggle('ok', /保存しました|消しました|入れました|開きました/.test(m)); t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), 2200); }
+// ボタンを「処理中」にする（二度押し防止）。終わったら元に戻す関数を返す
+function busy(btn, label) {
+  if (!btn) return () => {};
+  const old = btn.innerHTML; btn.classList.add('busy'); btn.disabled = true; if (label) btn.textContent = label;
+  return () => { btn.classList.remove('busy'); btn.disabled = false; btn.innerHTML = old; };
+}
 const md = d => { const [, m, dd] = d.split('-'); return `${+m}/${+dd}`; };
 const shortCourse = c => c.replace(/【.*?】|（.*?）|\(.*?\)/g, '').replace(/カントリー(クラブ|倶楽部)/, 'CC').replace(/ゴルフ(クラブ|倶楽部|コース)/, 'GC').trim();
 function tab(v) {
@@ -703,7 +730,7 @@ function renderEdit() {
       <div id="holes">${d.holes.slice(0, 9).map(holeHTML).join('')}${halfSum(0, 9)}${d.holes.slice(9).map((h, i) => holeHTML(h, i + 9)).join('')}${halfSum(9, 18)}</div>
       <label>良かったこと</label><textarea oninput="draft.good=this.value">${esc(d.good)}</textarea>
       <label>課題・反省</label><textarea oninput="draft.issue=this.value">${esc(d.issue)}</textarea>
-      <div class="btns"><button class="btn" onclick="${d.id ? `openRound('${d.id}')` : d.live ? 'closeSheet()' : 'closeSheet()'}">${d.live ? 'あとで続ける' : 'やめる'}</button><button class="btn primary" onclick="saveRound()">保存</button></div>
+      <div class="btns"><button class="btn" onclick="${d.id ? `openRound('${d.id}')` : d.live ? 'closeSheet()' : 'closeSheet()'}">${d.live ? 'あとで続ける' : 'やめる'}</button><button class="btn primary" onclick="saveRound(this)">保存</button></div>
     </div>`, true);
 }
 // segHTML のボタンは関数式を受け取る
@@ -732,7 +759,7 @@ function fillFromCourse() {
   const y = $('#sheet').scrollTop; renderEdit(); $('#sheet').scrollTop = y;
   toast('前回のパー・ヤードを入れました');
 }
-async function saveRound() {
+async function saveRound(btn) {
   const d = draft;
   if (!d.course.trim()) { toast('コース名を入れてください'); return; }
   if (!d.date) { toast('日付を入れてください'); return; }
@@ -741,7 +768,9 @@ async function saveRound() {
   const isNew = !d.id;
   if (isNew) { d.id = 'r' + d.date.replace(/-/g, ''); let n = 2; while (db.rounds.some(r => r.id === d.id)) d.id = 'r' + d.date.replace(/-/g, '') + '-' + n++; }
   const t = scoreOf(d.holes, 0, 18);
+  const done = busy(btn, '保存中…');
   const ok = await commit(db => { db.rounds = db.rounds.filter(r => r.id !== d.id); db.rounds.push(d); }, `${isNew ? 'ラウンドを記録' : 'ラウンドを修正'}：${d.date} ${d.course}${t ? ' ' + t : ''}`);
+  done();
   if (ok) { if (wasLive) { localStorage.removeItem(LIVE_KEY); liveMode = false; clearRemoteLive(); } toast('保存しました'); openRound(d.id); }
   else if (wasLive) { d.live = true; if (isNew) d.id = null; saveLiveLocal(); }
 }
@@ -805,16 +834,23 @@ function resumeLive() {
   draft = s.draft; liveIdx = s.idx || 0; liveMode = true; renderLive();
 }
 function stepper(i, k, v, sm) {
-  return `<div class="step ${sm ? 'sm' : ''}"><button type="button" onclick="bump(${i},'${k}',-1)">−</button><b>${v ?? '–'}</b><button type="button" onclick="bump(${i},'${k}',1)">＋</button></div>`;
+  return `<div class="step ${sm ? 'sm' : ''}" data-k="${k}"><button type="button" onclick="bump(${i},'${k}',-1)">−</button><b>${v ?? '–'}</b><button type="button" onclick="bump(${i},'${k}',1)">＋</button></div>`;
 }
 // 最初のタップはスコア＝パー、パット＝2から
+let lastBump = null;
 function bump(i, k, d) {
+  lastBump = k;
   const h = draft.holes[i];
   let v = h[k] != null ? h[k] + d : k === 'score' ? (h.par || 4) : k === 'putts' ? 2 : Math.max(0, d);
   v = Math.max(0, v);
   setH(i, k, (['ob', 'bunker', 'pen'].includes(k) && !v) ? undefined : v);
 }
-function goHole(k) { if (k < 0 || k > 17) return; liveIdx = k; saveLiveLocal(); pushLive(); renderLive(); $('#sheet').scrollTop = 0; }
+function goHole(k) {
+  if (k < 0 || k > 17) return;
+  const dir = k > liveIdx ? 'slide-l' : 'slide-r';
+  liveIdx = k; saveLiveLocal(); pushLive(); renderLive(); $('#sheet').scrollTop = 0;
+  const f = $('#sheet-body .form'); if (f) { f.classList.add(dir); }
+}
 function renderLive() {
   const i = liveIdx, h = draft.holes[i];
   const done = draft.holes.filter(x => x.score != null);
@@ -850,6 +886,7 @@ function renderLive() {
     <p style="text-align:center;margin-top:18px"><button class="btn danger" style="font-size:12px;padding:6px 12px" onclick="discardLive()">このラウンドの記録をやめて消す</button></p>
   </div>`, true);
   updateLiveStatus();
+  if (lastBump) { const el = document.querySelector(`[data-k="${lastBump}"] b`); if (el) el.classList.add('pop'); lastBump = null; }
 }
 async function discardLive() {
   if (!confirm('ラウンド中の入力を全部消します。よろしいですか？')) return;
@@ -971,6 +1008,7 @@ function setupHTML(inSheet) {
 }
 function openSettings() { openSheet(setupHTML(true)); }
 async function saveSettings() {
+  busy(document.querySelector('#sheet .btn.primary, #setup .btn.primary'), 'つないでいます…');
   cfg.token = $('#st-token').value.trim();
   const r = $('#st-repo'); if (r && r.value.trim()) cfg.repo = r.value.trim();
   localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
