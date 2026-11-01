@@ -267,6 +267,14 @@ const CLUBS = ['1W', '3W', '4W', '5W', '7W', 'U4', 'U5', 'U6', '5i', '6i', '7i',
 
 let cfg = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
 cfg.repo = cfg.repo || 'tkwkt123-ops/markers-data';
+// StubsとMarkersは同じ場所（tkwkt123-ops.github.io）なので、GitHubのキーを共有する。どちらかで1回入れれば両方で使える
+const SHARED_TOKEN_KEY = 'tkwkt-github-token';
+function sharedToken() {
+  return localStorage.getItem(SHARED_TOKEN_KEY)
+    || JSON.parse(localStorage.getItem('souko-config') || '{}').token
+    || JSON.parse(localStorage.getItem('markers-config') || '{}').token || '';
+}
+if (!cfg.token) cfg.token = sharedToken();
 let db = { version: 1, rounds: [] };
 let sha = null;
 
@@ -569,6 +577,7 @@ async function delRound(id) {
 let draft = null;
 function blankHoles() { return Array.from({ length: 18 }, (_, i) => ({ no: i + 1 })); }
 function openEdit(id) {
+  if (!id && localStorage.getItem(LIVE_KEY)) { resumeLive(); toast('ラウンド中の続きを開きました'); return; }
   const r = id && db.rounds.find(x => x.id === id);
   draft = r ? JSON.parse(JSON.stringify(r)) : { id: null, date: new Date().toLocaleDateString('sv-SE'), course: '', tee: 'レギュラー', weather: '', holes: blankHoles(), good: '', issue: '', links: [] };
   if (draft.holes.length !== 18) draft.holes = blankHoles();
@@ -615,6 +624,7 @@ function halfSum(from, to) {
 }
 function renderEdit() {
   const d = draft;
+  if (d.live) saveLiveLocal();
   const courses = [...new Set([...db.courses.map(c => c.name), ...db.rounds.map(r => r.course)])];
   openSheet(`<h3 style="margin-bottom:4px">${d.id ? 'ラウンドを書き直す' : 'ラウンドを記録'}</h3>
     <p class="muted">スコアカードのスクショをClaudeに送れば、代わりに入れることもできます。</p>
@@ -670,13 +680,56 @@ async function saveRound() {
   if (isNew) { d.id = 'r' + d.date.replace(/-/g, ''); let n = 2; while (db.rounds.some(r => r.id === d.id)) d.id = 'r' + d.date.replace(/-/g, '') + '-' + n++; }
   const t = scoreOf(d.holes, 0, 18);
   const ok = await commit(db => { db.rounds = db.rounds.filter(r => r.id !== d.id); db.rounds.push(d); }, `${isNew ? 'ラウンドを記録' : 'ラウンドを修正'}：${d.date} ${d.course}${t ? ' ' + t : ''}`);
-  if (ok) { if (wasLive) { localStorage.removeItem(LIVE_KEY); liveMode = false; } toast('保存しました'); openRound(d.id); }
+  if (ok) { if (wasLive) { localStorage.removeItem(LIVE_KEY); liveMode = false; clearRemoteLive(); } toast('保存しました'); openRound(d.id); }
   else if (wasLive) { d.live = true; if (isNew) d.id = null; saveLiveLocal(); }
 }
 
 /* ================= ラウンド中モード ================= */
 let liveMode = false, liveIdx = 0;
-function saveLiveLocal() { localStorage.setItem(LIVE_KEY, JSON.stringify({ draft, idx: liveIdx })); }
+function saveLiveLocal() {
+  if (!draft) return;
+  localStorage.setItem(LIVE_KEY, JSON.stringify({ draft, idx: liveIdx, at: new Date().toISOString() }));
+  clearTimeout(liveTimer); liveTimer = setTimeout(pushLive, 4000);
+  updateLiveStatus();
+}
+/* 途中保存のクラウド控え：markers-data の live.json（スマホの記録が消えても、ほかの開き方やPCから続きを開ける） */
+const LIVE_FILE = 'live.json';
+let liveTimer = null, liveSha = null, liveSyncing = false, liveSyncedAt = null, liveSyncedHash = '';
+async function pushLive() {
+  clearTimeout(liveTimer);
+  const raw = localStorage.getItem(LIVE_KEY);
+  if (!cfg.token || !raw || liveSyncing || raw === liveSyncedHash) return;
+  liveSyncing = true;
+  try {
+    for (let i = 0; i < 2; i++) {
+      try {
+        if (liveSha == null) { try { liveSha = (await gh(LIVE_FILE)).sha; } catch (e) { if (e.status !== 404) throw e; liveSha = ''; } }
+        const st = JSON.parse(raw);
+        const j = await gh(LIVE_FILE, { method: 'PUT', body: JSON.stringify({ message: `ラウンド中の途中保存：${st.draft.course} ${st.idx + 1}番`, content: b64enc(raw), ...(liveSha ? { sha: liveSha } : {}) }) });
+        liveSha = j.content.sha; liveSyncedAt = new Date(); liveSyncedHash = raw; break;
+      } catch (e) { if ((e.status === 409 || e.status === 422) && i === 0) { liveSha = null; continue; } throw e; }
+    }
+  } catch (e) { /* 電波がないときは、次の入力か電波が戻ったときにもう一度 */ }
+  finally { liveSyncing = false; updateLiveStatus(); if (localStorage.getItem(LIVE_KEY) !== liveSyncedHash && localStorage.getItem(LIVE_KEY)) { clearTimeout(liveTimer); liveTimer = setTimeout(pushLive, 15000); } }
+}
+async function fetchRemoteLive() { try { const j = await gh(LIVE_FILE); liveSha = j.sha; return JSON.parse(b64dec(j.content)); } catch (e) { if (e.status === 404) liveSha = ''; return null; } }
+async function clearRemoteLive() {
+  try { const j = await gh(LIVE_FILE); await gh(LIVE_FILE, { method: 'DELETE', body: JSON.stringify({ message: 'ラウンド中の途中保存を片付け', sha: j.sha }) }); } catch (e) {}
+  liveSha = ''; liveSyncedHash = '';
+}
+// スマホとクラウドの新しいほうを使う
+async function syncLiveFromRemote() {
+  const remote = await fetchRemoteLive(); if (!remote) return;
+  const local = JSON.parse(localStorage.getItem(LIVE_KEY) || 'null');
+  if (!local || (remote.at || '') > (local.at || '')) { localStorage.setItem(LIVE_KEY, JSON.stringify(remote)); liveSyncedHash = localStorage.getItem(LIVE_KEY); renderHome(); }
+}
+function updateLiveStatus() {
+  const el = document.getElementById('live-status'); if (!el) return;
+  const t = liveSyncedAt && liveSyncedHash === localStorage.getItem(LIVE_KEY);
+  el.innerHTML = `📱 この端末に保存済み　${t ? `☁️ ${liveSyncedAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} クラウドにも保存` : liveSyncing ? '☁️ クラウドに送信中…' : '☁️ 電波があるときにクラウドにも保存します'}`;
+}
+window.addEventListener('online', () => pushLive());
+document.addEventListener('visibilitychange', () => { if (document.hidden) pushLive(); });
 function startLive() {
   if (!draft.course.trim()) { toast('先にコースを入れてください'); return; }
   draft.live = true; liveMode = true;
@@ -697,7 +750,7 @@ function bump(i, k, d) {
   v = Math.max(0, v);
   setH(i, k, (['ob', 'bunker', 'pen'].includes(k) && !v) ? undefined : v);
 }
-function goHole(k) { if (k < 0 || k > 17) return; liveIdx = k; saveLiveLocal(); renderLive(); $('#sheet').scrollTop = 0; }
+function goHole(k) { if (k < 0 || k > 17) return; liveIdx = k; saveLiveLocal(); pushLive(); renderLive(); $('#sheet').scrollTop = 0; }
 function renderLive() {
   const i = liveIdx, h = draft.holes[i];
   const done = draft.holes.filter(x => x.score != null);
@@ -728,10 +781,17 @@ function renderLive() {
     <label>メモ</label><textarea style="min-height:70px" oninput="setH(${i},'memo',this.value,true)" placeholder="風、ライ、狙い、気づいたこと">${esc(h.memo || '')}</textarea>
     <div class="btns"><button class="btn" onclick="goHole(${i - 1})" ${i === 0 ? 'disabled' : ''}>← 前</button>${i < 17 ? `<button class="btn primary" onclick="goHole(${i + 1})">次のホール →</button>` : `<button class="btn primary" onclick="liveMode=false;renderEdit();toast('振り返りを書いて保存してください')">上がり</button>`}</div>
     <div class="btns"><button class="btn" onclick="liveMode=false;renderEdit()">全体を見る・振り返りを書く</button></div>
-    <p class="muted" style="text-align:center;margin-top:12px">入力はこの端末に自動で残ります。閉じても、ホームから続きを開けます。</p>
+    <p class="muted" id="live-status" style="text-align:center;margin-top:14px"></p>
+    <p class="muted" style="text-align:center">閉じても、ホームの緑のボタンか＋から続きを開けます。</p>
+    <p style="text-align:center;margin-top:18px"><button class="btn danger" style="font-size:12px;padding:6px 12px" onclick="discardLive()">このラウンドの記録をやめて消す</button></p>
   </div>`, true);
+  updateLiveStatus();
 }
-function discardLive() { if (confirm('ラウンド中の入力を消しますか？')) { localStorage.removeItem(LIVE_KEY); renderHome(); } }
+async function discardLive() {
+  if (!confirm('ラウンド中の入力を全部消します。よろしいですか？')) return;
+  if (!confirm('本当に消しますか？（元に戻せません）')) return;
+  localStorage.removeItem(LIVE_KEY); liveMode = false; draft = null; closeSheet(); await clearRemoteLive(); renderHome(); toast('消しました');
+}
 
 /* ================= 傾向 ================= */
 function miniChart(vals, { lowerBetter = true, color = '#4686a5', fmt = v => v } = {}) {
@@ -788,6 +848,8 @@ function openSheet(html, keepScroll) {
   document.body.style.overflow = 'hidden';
 }
 function closeSheet() { $('#sheet').classList.remove('on'); $('#sheet-bg').classList.remove('on'); $('#sheet').style.transform = ''; document.body.style.overflow = ''; }
+// ラウンド中は、どの欄の入力もその場で端末に残す
+['input', 'change'].forEach(ev => document.getElementById('sheet').addEventListener(ev, () => { if (draft && draft.live) saveLiveLocal(); }));
 // 下にスワイプ・つまみタップで閉じる
 (() => {
   const s = $('#sheet'); let y0 = null, dy = 0;
@@ -801,9 +863,11 @@ function closeSheet() { $('#sheet').classList.remove('on'); $('#sheet-bg').class
 function renderAll() { renderHome(); renderTendency(); }
 function setupHTML(inSheet) {
   return `${inSheet ? '' : '<div class="page-head"><div><div class="eyebrow">BALL MARKERS</div><h2>Markers</h2></div></div>'}
-  <p style="line-height:1.8">記録はGitHubの非公開リポジトリ <code>markers-data</code> に保存されます。この端末で1回だけ、GitHubのキーを入れてください。</p>
+  ${cfg.token && !inSheet ? `<p style="line-height:1.8;background:var(--card);border:1px solid var(--flag);border-radius:8px;padding:10px 12px">今のGitHubのキー（Stubsと共通）には、まだ <code>markers-data</code> を使う権限がありません。<br>
+    <a href="https://github.com/settings/personal-access-tokens" target="_blank">キーの一覧</a> → Stubsで使っているキー →「Repository access」に <code>markers-data</code> を追加して保存 → 下の「つなぐ」。<br><b>キーの文字は変わらないので、入れ直しは不要です。</b></p>` : ''}
+  <p style="line-height:1.8">記録はGitHubの非公開リポジトリ <code>markers-data</code> に保存されます。GitHubのキーはStubsと共通なので、どちらかで1回入れれば両方で使えます。</p>
   <ol>
-    <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank">キーの作成ページ</a>を開く（Stubsのキーを編集して <code>markers-data</code> を足してもOK）</li>
+    <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank">キーの作成ページ</a>を開く（Stubsのキーがあるなら、新しく作らずにそのキーに <code>markers-data</code> を足すだけでOK）</li>
     <li>名前は「Markers」、期限は「No expiration」（または1年）</li>
     <li>Repository access →「Only select repositories」→ <code>markers-data</code> を選ぶ</li>
     <li>Permissions →「Contents」を <b>Read and write</b> に</li>
@@ -822,6 +886,7 @@ async function saveSettings() {
   cfg.token = $('#st-token').value.trim();
   const r = $('#st-repo'); if (r && r.value.trim()) cfg.repo = r.value.trim();
   localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  if (cfg.token) localStorage.setItem(SHARED_TOKEN_KEY, cfg.token);
   closeSheet(); await start();
 }
 async function start() {
@@ -829,7 +894,7 @@ async function start() {
   if (!cfg.token) { $('#setup').innerHTML = setupHTML(false); $('#setup').style.display = 'block'; $('#app').style.display = 'none'; return; }
   const cache = localStorage.getItem(CACHE_KEY);
   if (cache) { db = normalize(JSON.parse(cache)); show(); }
-  try { await pull(); show(); }
+  try { await pull(); localStorage.setItem(SHARED_TOKEN_KEY, cfg.token); show(); syncLiveFromRemote(); pushLive(); }
   catch (e) {
     if (e.status === 401 || e.status === 403 || e.status === 404) { toast('キーが違うか、権限が足りません'); $('#setup').innerHTML = setupHTML(false); $('#setup').style.display = 'block'; $('#app').style.display = 'none'; }
     else toast('オフラインです（前回の内容を表示中）');
