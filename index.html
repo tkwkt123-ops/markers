@@ -145,6 +145,10 @@
   .note { font-family: var(--hand); line-height: 1.9; white-space: pre-wrap; font-size: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 6px 0 12px; }
   .note-label { font-size: 11px; letter-spacing: .25em; font-weight: 700; color: var(--fairway); margin-top: 14px; }
   .note-label.issue { color: var(--flag); }
+  .note-edit { display: block; width: 100%; resize: none; overflow: hidden; min-height: 70px; color: var(--ink); outline: none; }
+  .note-edit:focus { border-color: var(--fairway); }
+  .note-edit::placeholder { color: #b3ada0; }
+  #note-status { text-align: right; min-height: 16px; margin-top: -4px; }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 12px 0; }
   .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 8px; text-align: center; padding: 7px 2px; }
   .kpi b { display: block; font-family: var(--mincho); font-size: 18px; }
@@ -563,16 +567,58 @@ function openRound(id) {
       <div><div class="muted">${r.date.replace(/-/g, '/')}</div><h3>${esc(r.course)}</h3>
         <div class="halves">${(r.startIn ? [[1, inS(r)], [0, outS(r)]] : [[0, outS(r)], [1, inS(r)]]).map(([k, v]) => `<span>${esc(nine(r, k))} <b>${v ?? '–'}</b></span>`).join('')}${s.par ? `<span>${t - s.par >= 0 ? '+' : ''}${t - s.par}</span>` : ''}</div>
         <div class="chips">${chips}</div></div></div>
+    ${noteHTML(r)}
     ${kpis ? `<div class="kpis">${kpis}</div>` : ''}
     ${dist}
     <div style="height:12px"></div>
     ${r.startIn ? scorecard(r, 9, 18, nine(r, 1)) + scorecard(r, 0, 9, nine(r, 0)) : scorecard(r, 0, 9, nine(r, 0)) + scorecard(r, 9, 18, nine(r, 1))}
-    ${r.good ? `<div class="note-label">良かったこと</div><div class="note">${esc(r.good)}</div>` : ''}
-    ${r.issue ? `<div class="note-label issue">課題・反省</div><div class="note">${esc(r.issue)}</div>` : ''}
     ${r.layout ? `<a class="layout-link" href="${esc(r.layout)}" target="_blank">ホールのレイアウト（楽天GORA）↗</a>` : ''}
     ${r.links.length ? `<div class="muted" style="margin-top:8px">${r.links.map(u => `<a href="${esc(u)}" target="_blank">${u.includes('notion') ? '以前のNotionのページ' : esc(u)}</a>`).join('　')}</div>` : ''}
     <div class="btns"><button class="btn" onclick="openEdit('${r.id}')">書き直す</button><button class="btn danger" onclick="delRound('${r.id}')">消す</button></div>`);
+  ['#n-good', '#n-issue'].forEach(q => autosize($(q)));
 }
+/* ================= 振り返り（マーカーを開いたらすぐ書ける） ================= */
+// 書いている途中の文は端末に残し、手を止めたらGitHubへ。電波がなくても消えない
+const NOTE_PREFIX = 'markers-note-';
+let noteTimer = null, noteSaving = false;
+function pendingNote(id) { try { return JSON.parse(localStorage.getItem(NOTE_PREFIX + id) || 'null'); } catch (e) { return null; } }
+function noteHTML(r) {
+  const p = pendingNote(r.id);
+  const good = p ? p.good : r.good || '', issue = p ? p.issue : r.issue || '';
+  return `<div class="note-label" style="margin-top:4px">良かったこと</div>
+    <textarea class="note note-edit" id="n-good" rows="2" placeholder="タップして書く" oninput="noteInput('${r.id}', this)" onblur="noteFlush('${r.id}')">${esc(good)}</textarea>
+    <div class="note-label issue">課題・反省</div>
+    <textarea class="note note-edit" id="n-issue" rows="2" placeholder="タップして書く" oninput="noteInput('${r.id}', this)" onblur="noteFlush('${r.id}')">${esc(issue)}</textarea>
+    <div class="muted" id="note-status">${p ? 'まだ保存できていない文があります' : ''}</div>`;
+}
+function autosize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 2 + 'px'; }
+function noteInput(id, el) {
+  autosize(el);
+  localStorage.setItem(NOTE_PREFIX + id, JSON.stringify({ good: $('#n-good').value, issue: $('#n-issue').value }));
+  $('#note-status').textContent = '書いています…';
+  clearTimeout(noteTimer); noteTimer = setTimeout(() => noteFlush(id), 1500);
+}
+async function noteFlush(id) {
+  clearTimeout(noteTimer);
+  const p = pendingNote(id); if (!p || noteSaving) return;
+  const r = db.rounds.find(x => x.id === id);
+  const st = () => document.getElementById('note-status');
+  if (r && (r.good || '') === p.good && (r.issue || '') === p.issue) { localStorage.removeItem(NOTE_PREFIX + id); if (st()) st().textContent = '✓ 保存しました'; return; }
+  noteSaving = true; if (st()) st().textContent = '保存中…';
+  const ok = await commit(d => { const x = d.rounds.find(y => y.id === id); if (x) { x.good = p.good; x.issue = p.issue; } }, `振り返りを更新：${r ? r.date + ' ' + r.course : id}`);
+  noteSaving = false;
+  if (ok) {
+    const now = pendingNote(id);
+    if (now && (now.good !== p.good || now.issue !== p.issue)) return noteFlush(id);  // 保存中に書き足した分
+    localStorage.removeItem(NOTE_PREFIX + id);
+    if (st()) st().textContent = '✓ 保存しました';
+  } else if (st()) st().textContent = 'まだ保存できていません（この端末には残っています）';
+}
+// 前に保存しきれなかった振り返りを送る
+async function flushPendingNotes() {
+  for (const k of Object.keys(localStorage)) if (k.startsWith(NOTE_PREFIX)) await noteFlush(k.slice(NOTE_PREFIX.length));
+}
+
 async function delRound(id) {
   const r = db.rounds.find(x => x.id === id);
   if (!confirm(`${r.date} ${r.course} を消しますか？`)) return;
@@ -737,7 +783,7 @@ function updateLiveStatus() {
   const t = liveSyncedAt && liveSyncedHash === localStorage.getItem(LIVE_KEY);
   el.innerHTML = `📱 この端末に保存済み　${t ? `☁️ ${liveSyncedAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} クラウドにも保存` : liveSyncing ? '☁️ クラウドに送信中…' : '☁️ 電波があるときにクラウドにも保存します'}`;
 }
-window.addEventListener('online', () => pushLive());
+window.addEventListener('online', () => { pushLive(); flushPendingNotes(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pushLive(); });
 function startLive() {
   if (!draft.course.trim()) { toast('先にコースを入れてください'); return; }
@@ -903,7 +949,7 @@ async function start() {
   if (!cfg.token) { $('#setup').innerHTML = setupHTML(false); $('#setup').style.display = 'block'; $('#app').style.display = 'none'; return; }
   const cache = localStorage.getItem(CACHE_KEY);
   if (cache) { db = normalize(JSON.parse(cache)); show(); }
-  try { await pull(); localStorage.setItem(SHARED_TOKEN_KEY, cfg.token); show(); syncLiveFromRemote(); pushLive(); }
+  try { await pull(); localStorage.setItem(SHARED_TOKEN_KEY, cfg.token); show(); syncLiveFromRemote(); pushLive(); flushPendingNotes(); }
   catch (e) {
     if (e.status === 401 || e.status === 403 || e.status === 404) { toast('キーが違うか、権限が足りません'); $('#setup').innerHTML = setupHTML(false); $('#setup').style.display = 'block'; $('#app').style.display = 'none'; }
     else toast('オフラインです（前回の内容を表示中）');
