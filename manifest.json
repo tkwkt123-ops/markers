@@ -1,0 +1,9 @@
+{
+  "name": "Markers — ゴルフの記録",
+  "short_name": "Markers",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f3e4",
+  "theme_color": "#f6f3e4",
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
+}

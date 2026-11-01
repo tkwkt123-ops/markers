@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f3e4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Markers">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<title>Markers — ゴルフの記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Maru+Gothic:wght@400;500;700&family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f6f3e4;
+    --card: #fffdf5;
+    --ink: #2f3d35;
+    --ink-soft: #7c877f;
+    --line: #e1dcc7;
+    --grass: #9cc27e;
+    --fairway: #3f7a52;
+    --green: #5f9a5c;
+    --sky: #9cc9de;
+    --sand: #e6d3a3;
+    --sand-deep: #c9ad72;
+    --flag: #d0574d;
+    --gold: #d6ad4f;
+    --mincho: "Shippori Mincho", "Hiragino Mincho ProN", serif;
+    --maru: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+    --hand: "Klee One", "Zen Maru Gothic", sans-serif;
+    --tab-h: 64px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--maru); font-size: 15px; min-height: 100vh; padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 20px); }
+  /* 水彩のにじみ（芝・空・砂） */
+  body::before { content: ""; position: fixed; inset: -10%; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(38% 30% at 10% 6%, rgba(156,194,126,.38), transparent 70%),
+      radial-gradient(30% 26% at 92% 16%, rgba(156,201,222,.38), transparent 70%),
+      radial-gradient(36% 28% at 82% 90%, rgba(95,154,92,.22), transparent 70%),
+      radial-gradient(28% 22% at 16% 84%, rgba(230,211,163,.45), transparent 70%);
+    filter: blur(20px); }
+  button { font-family: inherit; color: inherit; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 18px; }
+  .eyebrow { font-size: 11px; letter-spacing: .32em; color: var(--fairway); font-weight: 700; }
+  h1, h2, h3 { font-family: var(--mincho); font-weight: 700; margin: 0; }
+  .page-head { padding: calc(env(safe-area-inset-top) + 22px) 0 10px; display: flex; align-items: flex-end; justify-content: space-between; }
+  .page-head h2 { font-size: 26px; margin-top: 4px; }
+  .muted { color: var(--ink-soft); font-size: 12px; }
+  .view { display: none; }
+  .view.on { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } }
+  .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; opacity: .7; }
+
+  /* タブバー */
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--tab-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: rgba(246,243,228,.92); backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; z-index: 20; }
+  .tabbar button { flex: 1; background: none; border: none; font-size: 10px; color: var(--ink-soft); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; letter-spacing: .05em; }
+  .tabbar button .ic { font-size: 19px; line-height: 1; filter: grayscale(1); opacity: .6; }
+  .tabbar button.on { color: var(--fairway); font-weight: 700; }
+  .tabbar button.on .ic { filter: none; opacity: 1; }
+  .fab { position: fixed; right: max(18px, calc(50% - 360px)); bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px); width: 58px; height: 58px; border-radius: 50%; border: none; background: var(--flag); color: #fff; font-size: 30px; box-shadow: 0 6px 18px rgba(208,87,77,.4); cursor: pointer; z-index: 21; }
+
+  /* まとめの数字 */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 14px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 8px 8px; text-align: center; }
+  .stat b { display: block; font-family: var(--mincho); font-size: 26px; line-height: 1.1; }
+  .stat span { font-size: 10px; letter-spacing: .15em; color: var(--ink-soft); font-weight: 700; }
+  .stat.best b { color: var(--gold); }
+
+  /* 推移（フェアウェイ） */
+  .trend { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 0 4px; position: relative; overflow: hidden; }
+  .trend-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .trend-scroll::-webkit-scrollbar { display: none; }
+  .trend svg { display: block; }
+  .trend .coin-pt { cursor: pointer; }
+  .trend-legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-soft); padding: 2px 14px 6px; }
+  .trend-legend i { display: inline-block; width: 16px; height: 0; border-top: 2px dashed var(--sand-deep); margin-right: 4px; vertical-align: 3px; }
+
+  /* マーカー（コイン） */
+  .sec-title { display: flex; align-items: baseline; justify-content: space-between; margin: 22px 0 10px; }
+  .sec-title h3 { font-size: 18px; }
+  .coins { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 16px 10px; }
+  .coin-wrap { text-align: center; cursor: pointer; }
+  .coin { width: 92px; height: 92px; margin: 0 auto; border-radius: 50%; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+    background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.45), transparent 42%), var(--c, var(--fairway));
+    box-shadow: 0 3px 0 rgba(0,0,0,.12), 0 6px 14px rgba(47,61,53,.15); }
+  .coin::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; border: 1.5px dashed rgba(255,255,255,.6); }
+  .coin .s { font-family: var(--mincho); font-size: 34px; font-weight: 700; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,.15); }
+  .coin .d { font-size: 10px; letter-spacing: .08em; opacity: .9; margin-top: 2px; }
+  .coin .star { position: absolute; top: -4px; right: -2px; font-size: 18px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.2)); }
+  .coin-wrap .c { font-size: 11px; margin-top: 7px; line-height: 1.35; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .month { grid-column: 1 / -1; font-family: var(--mincho); font-size: 14px; color: var(--fairway); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-top: 4px; display: flex; justify-content: space-between; }
+  .month small { font-family: var(--maru); color: var(--ink-soft); font-size: 11px; }
+
+  /* 傾向 */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+  .card h4 { margin: 0 0 2px; font-size: 13px; letter-spacing: .1em; }
+  .card .now { font-family: var(--mincho); font-size: 22px; font-weight: 700; }
+  .card .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .mini { width: 100%; height: 90px; display: block; margin-top: 6px; }
+  .bars { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .bar { display: grid; grid-template-columns: 70px 1fr 44px; gap: 8px; align-items: center; font-size: 12px; }
+  .bar .track { height: 12px; background: #efe9d6; border-radius: 6px; overflow: hidden; }
+  .bar .fill { height: 100%; border-radius: 6px; }
+  .courses { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .courses td { padding: 7px 4px; border-bottom: 1px solid var(--line); }
+  .courses td.n { text-align: right; white-space: nowrap; font-family: var(--mincho); font-weight: 700; }
+
+  /* シート */
+  .sheet-bg { position: fixed; inset: 0; background: rgba(47,61,53,.4); z-index: 40; display: none; }
+  .sheet-bg.on { display: block; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow-y: auto; background: var(--paper); border-radius: 18px 18px 0 0; z-index: 41; transform: translateY(100%); transition: transform .28s ease; padding: 10px 0 calc(env(safe-area-inset-bottom) + 24px); }
+  .sheet.on { transform: none; }
+  .sheet.dragging { transition: none; }
+  .sheet .grab { width: 44px; height: 5px; border-radius: 3px; background: #cfc6b2; margin: 0 auto 12px; cursor: grab; }
+  .sheet .wrap { max-width: 640px; }
+
+  /* ラウンド詳細 */
+  .detail-head { display: flex; gap: 16px; align-items: center; margin-bottom: 14px; }
+  .detail-head .coin { width: 100px; height: 100px; flex: none; }
+  .detail-head h3 { font-size: 19px; line-height: 1.35; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip { font-size: 11px; padding: 2px 9px; border-radius: 10px; background: #ece6d0; color: var(--ink); }
+  .halves { display: flex; gap: 12px; font-size: 13px; margin-top: 6px; }
+  .halves b { font-family: var(--mincho); font-size: 18px; }
+  .sc { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--card); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+  .sc th { background: var(--fairway); color: #fff; font-weight: 500; font-size: 10px; padding: 6px 2px; letter-spacing: .05em; }
+  .sc td { text-align: center; padding: 6px 2px; border-bottom: 1px solid var(--line); }
+  .sc tr.sum td { background: #eef3e3; font-weight: 700; }
+  .sc td.h { font-weight: 700; color: var(--fairway); }
+  .mk { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-family: var(--mincho); font-weight: 700; font-size: 16px; }
+  .mk.bd { border: 2px solid var(--flag); border-radius: 50%; color: var(--flag); }
+  .mk.eg { border: 2px double var(--flag); border-radius: 50%; color: var(--flag); }
+  .mk.par { color: var(--fairway); }
+  .mk.bg { background: #e3eff5; border-radius: 4px; }
+  .mk.db { background: var(--sand); border-radius: 4px; }
+  .mk.tp { background: var(--sand-deep); color: #fff; border-radius: 4px; }
+  .dir { font-size: 13px; }
+  .dir.ok { color: var(--green); }
+  .dir.l, .dir.r { color: #4f8fb0; }
+  .sub { font-size: 10px; color: var(--ink-soft); }
+  .note { font-family: var(--hand); line-height: 1.9; white-space: pre-wrap; font-size: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 6px 0 12px; }
+  .note-label { font-size: 11px; letter-spacing: .25em; font-weight: 700; color: var(--fairway); margin-top: 14px; }
+  .note-label.issue { color: var(--flag); }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 12px 0; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 8px; text-align: center; padding: 7px 2px; }
+  .kpi b { display: block; font-family: var(--mincho); font-size: 18px; }
+  .kpi span { font-size: 10px; color: var(--ink-soft); }
+  .dist { display: flex; height: 22px; border-radius: 11px; overflow: hidden; margin: 6px 0 4px; }
+  .dist div { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; font-weight: 700; }
+  .dist-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--ink-soft); }
+  .dist-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 3px; }
+
+  /* 入力フォーム */
+  .form label { display: block; font-size: 10px; letter-spacing: .25em; color: var(--ink-soft); font-weight: 700; margin: 14px 0 5px; }
+  .form input, .form select, .form textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); background: var(--card); border-radius: 8px; font-family: inherit; font-size: 16px; color: var(--ink); }
+  .form textarea { font-family: var(--hand); min-height: 100px; line-height: 1.8; }
+  .form .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .seg { display: flex; gap: 4px; flex-wrap: wrap; }
+  .seg button { border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 5px 11px; font-size: 13px; cursor: pointer; }
+  .seg button.on { background: var(--fairway); border-color: var(--fairway); color: #fff; }
+  .hole { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+  .hole .top { display: grid; grid-template-columns: 30px auto 1fr 1fr; gap: 8px; align-items: center; }
+  .hole .no { font-family: var(--mincho); font-weight: 700; font-size: 18px; color: var(--fairway); }
+  .hole input { padding: 7px 8px; font-size: 16px; text-align: center; }
+  .hole .mini-l { font-size: 9px; color: var(--ink-soft); letter-spacing: .1em; display: block; text-align: center; margin-bottom: 2px; }
+  .hole .more { display: grid; grid-template-columns: 1.2fr 1.6fr; gap: 8px; margin-top: 8px; align-items: end; }
+  .hole .more3 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
+  .hole select { padding: 7px 6px; font-size: 15px; }
+  .seg.sm button { padding: 4px 9px; font-size: 12px; }
+  .half-sum { text-align: right; font-size: 13px; margin: 4px 2px 12px; color: var(--ink-soft); }
+  .half-sum b { font-family: var(--mincho); font-size: 18px; color: var(--ink); }
+  .btns { display: flex; gap: 10px; margin-top: 18px; }
+  .btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); font-size: 15px; cursor: pointer; }
+  .btn.primary { background: var(--fairway); border-color: var(--fairway); color: #fff; font-weight: 700; }
+  .btn.danger { color: var(--flag); flex: 0 0 auto; }
+  details summary { cursor: pointer; }
+  .toast { position: fixed; left: 50%; bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 90px); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity .25s; z-index: 60; pointer-events: none; white-space: nowrap; }
+  .toast.on { opacity: .92; }
+  #setup { display: none; }
+  #setup ol { line-height: 2; font-size: 14px; padding-left: 20px; }
+  a { color: var(--fairway); }
+  .empty { text-align: center; color: var(--ink-soft); padding: 40px 0; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="setup" class="wrap"></div>
+
+<div id="app" style="display:none">
+  <section class="view on" id="v-home">
+    <div class="wrap">
+      <div class="page-head">
+        <div><div class="eyebrow">BALL MARKERS</div><h2>スコアの推移</h2></div>
+        <button class="icon-btn" onclick="openSettings()" aria-label="設定">⚙️</button>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="trend" id="trend"></div>
+      <div class="sec-title"><h3>マーカー</h3><span class="muted" id="count"></span></div>
+      <div class="coins" id="coins"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-trend">
+    <div class="wrap">
+      <div class="page-head"><div><div class="eyebrow">TENDENCY</div><h2>傾向</h2></div></div>
+      <div id="tendency"></div>
+    </div>
+  </section>
+
+  <button class="fab" onclick="openEdit()" aria-label="ラウンドを記録">＋</button>
+  <nav class="tabbar">
+    <button class="on" data-v="home" onclick="tab('home')"><span class="ic">⛳</span>推移</button>
+    <button data-v="trend" onclick="tab('trend')"><span class="ic">📈</span>傾向</button>
+  </nav>
+</div>
+
+<div class="sheet-bg" id="sheet-bg" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet"><div class="grab" id="grab"></div><div class="wrap" id="sheet-body"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
+const CFG_KEY = 'markers-config';
+const CACHE_KEY = 'markers-cache';
+const WEATHER = ['晴れ', '曇り', '雨', '風強い'];
+const TEES = ['レギュラー', 'レディース', 'バック', 'フロント'];
+const CLUBS = ['1W', '3W', '4W', '5W', '7W', 'U4', 'U5', 'U6', '5i', '6i', '7i', '8i', '9i', 'PW', 'AW', 'SW'];
+
+let cfg = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
+cfg.repo = cfg.repo || 'tkwkt123-ops/markers-data';
+let db = { version: 1, rounds: [] };
+let sha = null;
+
+const b64enc = s => { const b = new TextEncoder().encode(s); let x = ''; for (let i = 0; i < b.length; i += 0x8000) x += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(x); };
+const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, '')), c => c.charCodeAt(0)));
+
+async function gh(path, opt = {}) {
+  const r = await fetch(`https://api.github.com/repos/${cfg.repo}/contents/${path}`, {
+    ...opt, cache: 'no-store',
+    headers: { Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json', ...(opt.headers || {}) },
+  });
+  if (!r.ok) { const e = new Error(r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+async function pull() {
+  const j = await gh('data.json');
+  sha = j.sha;
+  db = normalize(JSON.parse(b64dec(j.content)));
+  localStorage.setItem(CACHE_KEY, JSON.stringify(db));
+}
+function normalize(d) {
+  d.rounds ||= [];
+  d.rounds.forEach(r => { r.holes ||= []; r.links ||= []; });
+  return d;
+}
+// 毎回最新を取り直してから変更を当てる（PCとスマホ、Claudeの書き込みがぶつからないように）
+async function commit(mutate, msg) {
+  for (let i = 0; i < 3; i++) {
+    try {
+      await pull();
+      mutate(db);
+      const j = await gh('data.json', { method: 'PUT', body: JSON.stringify({ message: msg, content: b64enc(JSON.stringify(db, null, 1) + '\n'), sha }) });
+      sha = j.content.sha;
+      localStorage.setItem(CACHE_KEY, JSON.stringify(db));
+      renderAll();
+      return true;
+    } catch (e) {
+      if (e.status === 409 && i < 2) continue;
+      toast('保存できませんでした（' + (e.status || '通信エラー') + '）');
+      return false;
+    }
+  }
+}
+
+/* ================= 小道具 ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sum = a => a.reduce((x, y) => x + y, 0);
+const num = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('on'), 2200); }
+const md = d => { const [, m, dd] = d.split('-'); return `${+m}/${+dd}`; };
+const shortCourse = c => c.replace(/【.*?】|（.*?）|\(.*?\)/g, '').replace(/カントリー(クラブ|倶楽部)/, 'CC').replace(/ゴルフ(クラブ|倶楽部|コース)/, 'GC').trim();
+function tab(v) {
+  document.querySelectorAll('.view').forEach(e => e.classList.toggle('on', e.id === 'v-' + v));
+  document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  window.scrollTo(0, 0);
+}
+
+/* ================= 計算 ================= */
+const sorted = () => [...db.rounds].sort((a, b) => a.date.localeCompare(b.date));
+function scoreOf(h, from, to) { const xs = h.slice(from, to).map(x => x.score); return xs.every(v => v != null) && xs.length ? sum(xs) : null; }
+const total = r => r.holes.length === 18 ? scoreOf(r.holes, 0, 18) : r.total ?? null;
+const outS = r => scoreOf(r.holes, 0, 9);
+const inS = r => scoreOf(r.holes, 9, 18);
+function putts(r) { const p = r.holes.map(h => h.putts); return p.length === 18 && p.every(v => v != null) ? sum(p) : r.putts ?? null; }
+const hasPar = r => r.holes.length === 18 && r.holes.every(h => h.par);
+function stats(r) {
+  const H = r.holes, s = {};
+  if (hasPar(r)) {
+    s.par = sum(H.map(h => h.par));
+    const withP = H.filter(h => h.putts != null);
+    if (withP.length === 18) {
+      s.gir = H.filter(h => h.score - h.putts <= h.par - 2).length;
+      s.bon = H.filter(h => h.score - h.putts <= h.par - 1).length;
+      s.three = H.filter(h => h.putts >= 3).length;
+    }
+    const fwH = H.filter(h => h.par >= 4 && h.dir);
+    if (fwH.length) s.fw = [fwH.filter(h => h.dir === '◯').length, fwH.length];
+    const p3 = H.filter(h => h.par === 3 && h.dir);
+    if (p3.length) s.on1 = [p3.filter(h => h.dir === '◯').length, p3.length];
+    s.dist = { bd: 0, par: 0, bg: 0, db: 0, tp: 0 };
+    H.forEach(h => { const d = h.score - h.par; s.dist[d < 0 ? 'bd' : d === 0 ? 'par' : d === 1 ? 'bg' : d === 2 ? 'db' : 'tp']++; });
+  }
+  s.ob = sum(H.map(h => h.ob || 0)); s.bunker = sum(H.map(h => h.bunker || 0)); s.pen = sum(H.map(h => h.pen || 0));
+  s.detail = H.some(h => h.dir || h.club || h.ob != null);
+  return s;
+}
+function coinColor(t) {
+  if (t == null) return '#b7b19c';
+  if (t < 90) return 'var(--gold)';
+  if (t < 95) return 'var(--fairway)';
+  if (t < 100) return 'var(--green)';
+  if (t < 105) return '#7fae9c';
+  if (t < 110) return '#6fa5bf';
+  return 'var(--sand-deep)';
+}
+function bestRound() { let b = null; db.rounds.forEach(r => { const t = total(r); if (t != null && (!b || t < total(b))) b = r; }); return b; }
+
+/* ================= ホーム ================= */
+function renderHome() {
+  const rs = sorted().filter(r => total(r) != null);
+  const best = bestRound();
+  const last5 = rs.slice(-5).map(total);
+  const avg5 = last5.length ? (sum(last5) / last5.length).toFixed(1) : '–';
+  const year = new Date().getFullYear();
+  const yr = rs.filter(r => r.date.startsWith(year));
+  const sub100 = yr.filter(r => total(r) < 100).length;
+  $('#stats').innerHTML = `
+    <div class="stat best"><b>${best ? total(best) : '–'}</b><span>ベスト</span></div>
+    <div class="stat"><b>${avg5}</b><span>直近5回の平均</span></div>
+    <div class="stat"><b>${sub100}<small style="font-size:13px">/${yr.length}</small></b><span>${year}年 100切り</span></div>`;
+  renderTrend(rs, best);
+  renderCoins(best);
+  $('#count').textContent = `${db.rounds.length}ラウンド`;
+}
+
+function renderTrend(rs, best) {
+  const el = $('#trend');
+  if (!rs.length) { el.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
+  const step = 54, padL = 34, padR = 30, H = 230, top = 26, bot = 44;
+  const W = Math.max(el.clientWidth || 340, padL + padR + step * (rs.length - 1));
+  const ts = rs.map(total);
+  const lo = Math.min(...ts, 88) - 3, hi = Math.max(...ts, 102) + 3;
+  // 少ない打数ほど上に
+  const y = t => top + (t - lo) / (hi - lo) * (H - top - bot);
+  const x = i => rs.length === 1 ? W / 2 : padL + i * ((W - padL - padR) / (rs.length - 1));
+  const pts = rs.map((r, i) => [x(i), y(ts[i])]);
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  // 直近5回の平均
+  const ma = rs.map((r, i) => { const w = ts.slice(Math.max(0, i - 4), i + 1); return [x(i), y(sum(w) / w.length)]; });
+  const maLine = ma.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const area = line + ` L${x(rs.length - 1)} ${H - bot} L${x(0)} ${H - bot} Z`;
+  const guide = (t, label) => t > lo && t < hi ? `<line x1="0" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#c9ad72" stroke-dasharray="4 5" stroke-width="1.2"/><text x="6" y="${y(t) - 5}" font-size="10" fill="#a88f5a">${label}</text>` : '';
+  let months = '', prevM = '';
+  rs.forEach((r, i) => {
+    const m = r.date.slice(0, 7);
+    months += `<text x="${x(i)}" y="${H - bot + 18}" font-size="10" text-anchor="middle" fill="#7c877f">${md(r.date)}</text>`;
+    if (m !== prevM) { months += `<text x="${x(i)}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#3f7a52" font-weight="700">${+m.slice(5)}月</text>`; prevM = m; }
+  });
+  const coins = rs.map((r, i) => {
+    const isBest = best && r.id === best.id;
+    const fill = isBest ? '#d6ad4f' : '#3f7a52';
+    return `<g class="coin-pt" onclick="openRound('${r.id}')">
+      <circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="16" fill="${fill}" stroke="#fffdf5" stroke-width="2.5"/>
+      <circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="12" fill="none" stroke="rgba(255,255,255,.55)" stroke-dasharray="2 2"/>
+      <text x="${pts[i][0]}" y="${pts[i][1] + 4.5}" font-size="13" font-weight="700" text-anchor="middle" fill="#fff" font-family="Shippori Mincho, serif">${ts[i]}</text>
+      ${isBest ? `<text x="${pts[i][0] + 13}" y="${pts[i][1] - 11}" font-size="12">⭐</text>` : ''}
+    </g>`;
+  }).join('');
+  el.innerHTML = `<div class="trend-scroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+      <defs><linearGradient id="fw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc27e" stop-opacity=".55"/><stop offset="1" stop-color="#9cc27e" stop-opacity=".05"/></linearGradient></defs>
+      ${guide(100, '100切り')}${guide(90, '90切り')}
+      <path d="${area}" fill="url(#fw)"/>
+      <path d="${maLine}" fill="none" stroke="#9cc9de" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+      <path d="${line}" fill="none" stroke="#5f9a5c" stroke-width="2" stroke-linejoin="round"/>
+      ${months}${coins}
+    </svg></div>
+    <div class="trend-legend"><span>● スコア（上ほど少ない）</span><span style="color:#6fa5bf">━ 直近5回の平均</span><span><i></i>目標ライン</span></div>`;
+  const sc = el.querySelector('.trend-scroll'); sc.scrollLeft = sc.scrollWidth;
+}
+
+function coinHTML(r, best, big) {
+  const t = total(r);
+  return `<div class="coin" style="--c:${coinColor(t)}${big ? ';width:100px;height:100px' : ''}">
+    ${best && best.id === r.id ? '<span class="star">⭐</span>' : ''}
+    <span class="d">${r.date.slice(0, 4)}</span>
+    <span class="s">${t ?? '–'}</span>
+    <span class="d">${md(r.date)}</span></div>`;
+}
+function renderCoins(best) {
+  const rs = sorted().reverse();
+  if (!rs.length) { $('#coins').innerHTML = '<div class="empty" style="grid-column:1/-1">右下の＋から、最初のラウンドを記録しましょう</div>'; return; }
+  let html = '', prev = '';
+  const per = {};
+  rs.forEach(r => { const m = r.date.slice(0, 7); per[m] = (per[m] || 0) + 1; });
+  rs.forEach(r => {
+    const m = r.date.slice(0, 7);
+    if (m !== prev) { html += `<div class="month">${m.slice(0, 4)}年${+m.slice(5)}月<small>${per[m]}回</small></div>`; prev = m; }
+    html += `<div class="coin-wrap" onclick="openRound('${r.id}')">${coinHTML(r, best)}<div class="c">${esc(shortCourse(r.course))}</div></div>`;
+  });
+  $('#coins').innerHTML = html;
+}
+
+/* ================= ラウンド詳細 ================= */
+function mark(h) {
+  if (h.score == null) return '';
+  if (!h.par) return `<span class="mk">${h.score}</span>`;
+  const d = h.score - h.par;
+  const c = d <= -2 ? 'eg' : d === -1 ? 'bd' : d === 0 ? 'par' : d === 1 ? 'bg' : d === 2 ? 'db' : 'tp';
+  return `<span class="mk ${c}">${h.score}</span>`;
+}
+function dirHTML(h) {
+  if (!h.dir) return '';
+  const m = { '◯': ['ok', '◯'], '左': ['l', '↖ 左'], '右': ['r', '右 ↗'] }[h.dir] || ['', h.dir];
+  return `<span class="dir ${m[0]}">${m[1]}</span>`;
+}
+function scorecard(r, from, to, label) {
+  const H = r.holes.slice(from, to), par = hasPar(r);
+  const det = stats(r).detail;
+  const rows = H.map(h => `<tr>
+    <td class="h">${h.no}</td>
+    ${par ? `<td>${h.par}<div class="sub">${h.yd ? h.yd + 'y' : ''}</div></td>` : ''}
+    <td>${mark(h)}</td>
+    <td>${h.putts ?? ''}</td>
+    ${det ? `<td>${esc(h.club || '')}</td><td>${dirHTML(h)}</td><td class="sub">${[h.ob ? 'OB' + (h.ob > 1 ? h.ob : '') : '', h.bunker ? 'バンカー' + (h.bunker > 1 ? h.bunker : '') : '', h.pen ? 'ペナ' + (h.pen > 1 ? h.pen : '') : ''].filter(Boolean).join(' ')}</td>` : ''}
+  </tr>`).join('');
+  const s = scoreOf(r.holes, from, to), p = H.every(h => h.putts != null) ? sum(H.map(h => h.putts)) : '';
+  const ps = par ? sum(H.map(h => h.par)) : null;
+  return `<table class="sc"><tr><th>${label}</th>${par ? '<th>PAR</th>' : ''}<th>スコア</th><th>パット</th>${det ? '<th>1打目</th><th>方向</th><th>そのほか</th>' : ''}</tr>${rows}
+    <tr class="sum"><td>計</td>${par ? `<td>${ps}</td>` : ''}<td>${s ?? ''}${par && s != null ? `<span class="sub"> ${s - ps >= 0 ? '+' : ''}${s - ps}</span>` : ''}</td><td>${p}</td>${det ? '<td colspan="3"></td>' : ''}</tr></table>`;
+}
+function openRound(id) {
+  const r = db.rounds.find(x => x.id === id); if (!r) return;
+  const s = stats(r), t = total(r), p = putts(r), best = bestRound();
+  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
+  const kpis = [
+    p != null && `<div class="kpi"><b>${p}</b><span>パット</span></div>`,
+    s.fw && `<div class="kpi"><b>${pct(...s.fw)}</b><span>FWキープ ${s.fw[0]}/${s.fw[1]}</span></div>`,
+    s.gir != null && `<div class="kpi"><b>${s.gir}</b><span>パーオン</span></div>`,
+    s.bon != null && `<div class="kpi"><b>${s.bon}</b><span>ボギーオン</span></div>`,
+    s.on1 && `<div class="kpi"><b>${s.on1[0]}/${s.on1[1]}</b><span>パー3 1オン</span></div>`,
+    s.three != null && `<div class="kpi"><b>${s.three}</b><span>3パット以上</span></div>`,
+    s.detail && `<div class="kpi"><b>${s.ob}</b><span>OB</span></div>`,
+    s.detail && `<div class="kpi"><b>${s.bunker}・${s.pen}</b><span>バンカー・ペナ</span></div>`,
+  ].filter(Boolean).join('');
+  const D = s.dist, DC = { bd: ['バーディ以下', 'var(--flag)'], par: ['パー', 'var(--fairway)'], bg: ['ボギー', '#7fb3cc'], db: ['ダボ', 'var(--sand-deep)'], tp: ['トリプル以上', '#9a7d4c'] };
+  const dist = D ? `<div class="note-label">スコアの内訳</div>
+    <div class="dist">${Object.keys(DC).filter(k => D[k]).map(k => `<div style="flex:${D[k]};background:${DC[k][1]}">${D[k]}</div>`).join('')}</div>
+    <div class="dist-legend">${Object.keys(DC).map(k => `<span><i style="background:${DC[k][1]}"></i>${DC[k][0]} ${D[k]}</span>`).join('')}</div>` : '';
+  const chips = [r.tee, r.weather, r.wind && '風 ' + r.wind].filter(Boolean).map(c => `<span class="chip">${esc(c)}</span>`).join('');
+  openSheet(`
+    <div class="detail-head">${coinHTML(r, best, true)}
+      <div><div class="muted">${r.date.replace(/-/g, '/')}</div><h3>${esc(r.course)}</h3>
+        <div class="halves"><span>OUT <b>${outS(r) ?? '–'}</b></span><span>IN <b>${inS(r) ?? '–'}</b></span>${s.par ? `<span>${t - s.par >= 0 ? '+' : ''}${t - s.par}</span>` : ''}</div>
+        <div class="chips">${chips}</div></div></div>
+    ${kpis ? `<div class="kpis">${kpis}</div>` : ''}
+    ${dist}
+    <div style="height:12px"></div>
+    ${scorecard(r, 0, 9, 'OUT')}${scorecard(r, 9, 18, 'IN')}
+    ${r.good ? `<div class="note-label">良かったこと</div><div class="note">${esc(r.good)}</div>` : ''}
+    ${r.issue ? `<div class="note-label issue">課題・反省</div><div class="note">${esc(r.issue)}</div>` : ''}
+    ${r.links.length ? `<div class="muted" style="margin-top:8px">${r.links.map(u => `<a href="${esc(u)}" target="_blank">${u.includes('notion') ? '以前のNotionのページ' : esc(u)}</a>`).join('　')}</div>` : ''}
+    <div class="btns"><button class="btn" onclick="openEdit('${r.id}')">書き直す</button><button class="btn danger" onclick="delRound('${r.id}')">消す</button></div>`);
+}
+async function delRound(id) {
+  const r = db.rounds.find(x => x.id === id);
+  if (!confirm(`${r.date} ${r.course} を消しますか？`)) return;
+  closeSheet();
+  if (await commit(d => { d.rounds = d.rounds.filter(x => x.id !== id); }, `ラウンドを削除：${r.date} ${r.course}`)) toast('消しました');
+}
+
+/* ================= 入力 ================= */
+let draft = null;
+function blankHoles() { return Array.from({ length: 18 }, (_, i) => ({ no: i + 1 })); }
+function openEdit(id) {
+  const r = id && db.rounds.find(x => x.id === id);
+  draft = r ? JSON.parse(JSON.stringify(r)) : { id: null, date: new Date().toLocaleDateString('sv-SE'), course: '', tee: 'レギュラー', weather: '', holes: blankHoles(), good: '', issue: '', links: [] };
+  if (draft.holes.length !== 18) draft.holes = blankHoles();
+  renderEdit();
+}
+function segHTML(list, val, fn, cls = '') {
+  return `<div class="seg ${cls}">${list.map(v => `<button type="button" class="${v === val ? 'on' : ''}" onclick="(${fn})(${esc(JSON.stringify(v))})">${esc(v)}</button>`).join('')}</div>`;
+}
+function holeHTML(h, i) {
+  const par = h.par;
+  const dirs = par === 3 ? ['◯', '左', '右'] : ['◯', '左', '右'];
+  return `<div class="hole">
+    <div class="top">
+      <span class="no">${h.no}</span>
+      <div>${segHTML([3, 4, 5], par, `v=>setH(${i},'par',v)`, 'sm')}</div>
+      <div><span class="mini-l">スコア</span><input inputmode="numeric" value="${h.score ?? ''}" oninput="setH(${i},'score',num(this.value),true)"></div>
+      <div><span class="mini-l">パット</span><input inputmode="numeric" value="${h.putts ?? ''}" oninput="setH(${i},'putts',num(this.value),true)"></div>
+    </div>
+    <div class="more">
+      <div><span class="mini-l">1打目のクラブ</span><select onchange="setH(${i},'club',this.value,true)"><option value=""></option>${CLUBS.map(c => `<option ${h.club === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
+      <div><span class="mini-l">${par === 3 ? '1オン' : 'フェアウェイ'}</span>${segHTML(dirs, h.dir, `v=>setH(${i},'dir',v===draft.holes[${i}].dir?undefined:v)`, 'sm')}</div>
+    </div>
+    <div class="more3">
+      <div><span class="mini-l">OB</span><input inputmode="numeric" value="${h.ob || ''}" oninput="setH(${i},'ob',num(this.value)||undefined,true)"></div>
+      <div><span class="mini-l">バンカー</span><input inputmode="numeric" value="${h.bunker || ''}" oninput="setH(${i},'bunker',num(this.value)||undefined,true)"></div>
+      <div><span class="mini-l">ペナ</span><input inputmode="numeric" value="${h.pen || ''}" oninput="setH(${i},'pen',num(this.value)||undefined,true)"></div>
+      <div><span class="mini-l">ヤード</span><input inputmode="numeric" value="${h.yd ?? ''}" oninput="setH(${i},'yd',num(this.value)??undefined,true)"></div>
+      <div><span class="mini-l">HC</span><input inputmode="numeric" value="${h.hc ?? ''}" oninput="setH(${i},'hc',num(this.value)??undefined,true)"></div>
+    </div>
+  </div>`;
+}
+function halfSum(from, to) {
+  const H = draft.holes.slice(from, to);
+  const s = H.every(h => h.score != null) ? sum(H.map(h => h.score)) : '–';
+  const p = H.every(h => h.putts != null) ? sum(H.map(h => h.putts)) : '–';
+  return `<div class="half-sum" id="hs${from}">${from ? 'IN' : 'OUT'} <b>${s}</b>　パット ${p}</div>`;
+}
+function renderEdit() {
+  const d = draft;
+  const courses = [...new Set(db.rounds.map(r => r.course))];
+  openSheet(`<h3 style="margin-bottom:4px">${d.id ? 'ラウンドを書き直す' : 'ラウンドを記録'}</h3>
+    <p class="muted">スコアカードのスクショをClaudeに送れば、代わりに入れることもできます。</p>
+    <div class="form">
+      <div class="two">
+        <div><label>日付</label><input type="date" value="${d.date}" onchange="draft.date=this.value"></div>
+        <div><label>ティー</label><select onchange="draft.tee=this.value"><option value=""></option>${TEES.map(t => `<option ${d.tee === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      </div>
+      <label>コース</label><input list="courses" value="${esc(d.course)}" onchange="draft.course=this.value;fillFromCourse()" placeholder="〇〇カントリークラブ">
+      <datalist id="courses">${courses.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+      <label>天気</label>${segHTML(WEATHER, d.weather, "v=>{draft.weather=draft.weather===v?'':v;renderEdit()}")}
+      <label>ホールごと</label>
+      <div id="holes">${d.holes.slice(0, 9).map(holeHTML).join('')}${halfSum(0, 9)}${d.holes.slice(9).map((h, i) => holeHTML(h, i + 9)).join('')}${halfSum(9, 18)}</div>
+      <label>良かったこと</label><textarea oninput="draft.good=this.value">${esc(d.good)}</textarea>
+      <label>課題・反省</label><textarea oninput="draft.issue=this.value">${esc(d.issue)}</textarea>
+      <div class="btns"><button class="btn" onclick="${d.id ? `openRound('${d.id}')` : 'closeSheet()'}">やめる</button><button class="btn primary" onclick="saveRound()">保存</button></div>
+    </div>`, true);
+}
+// segHTML のボタンは関数式を受け取る
+function setH(i, k, v, quiet) {
+  if (v === undefined || v === null || v === '') delete draft.holes[i][k]; else draft.holes[i][k] = v;
+  if (quiet) { const el = $(i < 9 ? '#hs0' : '#hs9'); if (el) el.outerHTML = i < 9 ? halfSum(0, 9) : halfSum(9, 18); }
+  else { const y = $('#sheet').scrollTop; renderEdit(); $('#sheet').scrollTop = y; }
+}
+// 前に回ったコースならパー・ヤード・HCを写す
+function fillFromCourse() {
+  const prev = sorted().reverse().find(r => r.course === draft.course && hasPar(r) && r.id !== draft.id);
+  if (!prev || draft.holes.some(h => h.par)) return;
+  prev.holes.forEach((h, i) => { ['par', 'yd', 'hc'].forEach(k => { if (h[k] != null) draft.holes[i][k] = h[k]; }); });
+  const y = $('#sheet').scrollTop; renderEdit(); $('#sheet').scrollTop = y;
+  toast('前回のパー・ヤードを入れました');
+}
+async function saveRound() {
+  const d = draft;
+  if (!d.course.trim()) { toast('コース名を入れてください'); return; }
+  if (!d.date) { toast('日付を入れてください'); return; }
+  d.course = d.course.trim();
+  const isNew = !d.id;
+  if (isNew) { d.id = 'r' + d.date.replace(/-/g, ''); let n = 2; while (db.rounds.some(r => r.id === d.id)) d.id = 'r' + d.date.replace(/-/g, '') + '-' + n++; }
+  const t = scoreOf(d.holes, 0, 18);
+  const ok = await commit(db => { db.rounds = db.rounds.filter(r => r.id !== d.id); db.rounds.push(d); }, `${isNew ? 'ラウンドを記録' : 'ラウンドを修正'}：${d.date} ${d.course}${t ? ' ' + t : ''}`);
+  if (ok) { toast('保存しました'); openRound(d.id); }
+}
+
+/* ================= 傾向 ================= */
+function miniChart(vals, { lowerBetter = true, color = '#5f9a5c', fmt = v => v } = {}) {
+  const pts = vals.map((v, i) => [i, v]).filter(p => p[1] != null);
+  if (pts.length < 2) return '<div class="muted" style="padding:10px 0">記録が2回分たまると線が出ます</div>';
+  const W = 320, H = 90, pad = 10;
+  const ys = pts.map(p => p[1]), lo = Math.min(...ys), hi = Math.max(...ys), span = hi - lo || 1;
+  const x = i => pad + i / (vals.length - 1 || 1) * (W - pad * 2);
+  const y = v => lowerBetter ? pad + (v - lo) / span * (H - pad * 2) : H - pad - (v - lo) / span * (H - pad * 2);
+  const d = pts.map((p, k) => (k ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+  const last = pts[pts.length - 1];
+  return `<svg class="mini" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    ${pts.map(p => `<circle cx="${x(p[0])}" cy="${y(p[1])}" r="2.6" fill="${color}"/>`).join('')}
+    <circle cx="${x(last[0])}" cy="${y(last[1])}" r="4.5" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+  </svg><div class="row muted"><span>ベスト ${fmt(lowerBetter ? lo : hi)}</span><span>ワースト ${fmt(lowerBetter ? hi : lo)}</span></div>`;
+}
+function renderTendency() {
+  const rs = sorted().filter(r => total(r) != null);
+  if (!rs.length) { $('#tendency').innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
+  const ST = rs.map(stats);
+  const lastOf = a => { for (let i = a.length - 1; i >= 0; i--) if (a[i] != null) return a[i]; return null; };
+  const avgOf = a => { const b = a.filter(v => v != null).slice(-5); return b.length ? (sum(b) / b.length) : null; };
+  const card = (title, vals, opt = {}, unit = '') => {
+    const l = lastOf(vals), a = avgOf(vals), f = opt.fmt || (v => v);
+    return `<div class="card"><div class="row"><h4>${title}</h4><span class="muted">直近5回の平均 ${a == null ? '–' : f(+a.toFixed(1))}${unit}</span></div>
+      <div class="now">${l == null ? '–' : f(l)}<small style="font-size:12px;font-family:var(--maru)"> ${unit}（最新）</small></div>${miniChart(vals, opt)}</div>`;
+  };
+  const pctv = x => x ? Math.round(x[0] / x[1] * 100) : null;
+  // パー3・4・5ごとの平均オーバー
+  const by = { 3: [], 4: [], 5: [] };
+  rs.forEach(r => { if (hasPar(r)) r.holes.forEach(h => by[h.par]?.push(h.score - h.par)); });
+  const parRows = [3, 4, 5].filter(p => by[p].length).map(p => { const a = sum(by[p]) / by[p].length; return `<div class="bar"><span>パー${p}</span><div class="track"><div class="fill" style="width:${Math.min(100, a / 3 * 100)}%;background:${['', '', '', '#9cc9de', '#5f9a5c', '#c9ad72'][p]}"></div></div><b>+${a.toFixed(2)}</b></div>`; }).join('');
+  // コースごと
+  const cs = {};
+  rs.forEach(r => { const k = shortCourse(r.course); (cs[k] ||= []).push(total(r)); });
+  const courseRows = Object.entries(cs).sort((a, b) => b[1].length - a[1].length || Math.min(...a[1]) - Math.min(...b[1]))
+    .map(([c, v]) => `<tr><td>${esc(c)}</td><td class="muted" style="text-align:right">${v.length}回</td><td class="n">${Math.min(...v)}</td></tr>`).join('');
+  $('#tendency').innerHTML =
+    card('スコア', rs.map(total), {}, '打') +
+    card('パット数', rs.map(putts), { color: '#6fa5bf' }, '') +
+    (ST.some(s => s.fw) ? card('FWキープ率', ST.map(s => pctv(s.fw)), { lowerBetter: false, color: '#3f7a52' }, '%') : '') +
+    (ST.some(s => s.gir != null) ? card('パーオン', ST.map(s => s.gir ?? null), { lowerBetter: false, color: '#d0574d' }, '回') : '') +
+    (ST.some(s => s.dist) ? card('トリプル以上のホール', ST.map(s => s.dist ? s.dist.tp : null), { color: '#9a7d4c' }, '回') : '') +
+    (parRows ? `<div class="card"><h4>パーごとの平均（パーより何打多いか）</h4><div class="bars">${parRows}</div><p class="muted" style="margin:8px 0 0">パーが入っているラウンドだけで計算しています</p></div>` : '') +
+    `<div class="card"><h4>コースごと</h4><table class="courses"><tr class="muted"><td>コース</td><td style="text-align:right">回数</td><td class="n" style="font-family:var(--maru);font-weight:400">ベスト</td></tr>${courseRows}</table></div>`;
+}
+
+/* ================= シート ================= */
+function openSheet(html, keepScroll) {
+  $('#sheet-body').innerHTML = html;
+  $('#sheet').classList.add('on'); $('#sheet-bg').classList.add('on');
+  if (!keepScroll) $('#sheet').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet() { $('#sheet').classList.remove('on'); $('#sheet-bg').classList.remove('on'); $('#sheet').style.transform = ''; document.body.style.overflow = ''; }
+// 下にスワイプ・つまみタップで閉じる
+(() => {
+  const s = $('#sheet'); let y0 = null, dy = 0;
+  s.addEventListener('touchstart', e => { if (s.scrollTop > 0) { y0 = null; return; } y0 = e.touches[0].clientY; dy = 0; }, { passive: true });
+  s.addEventListener('touchmove', e => { if (y0 == null) return; dy = e.touches[0].clientY - y0; if (dy > 0) { s.classList.add('dragging'); s.style.transform = `translateY(${dy}px)`; } }, { passive: true });
+  s.addEventListener('touchend', () => { s.classList.remove('dragging'); if (y0 != null && dy > 110) closeSheet(); else s.style.transform = ''; y0 = null; });
+  $('#grab').addEventListener('click', closeSheet);
+})();
+
+/* ================= 起動 ================= */
+function renderAll() { renderHome(); renderTendency(); }
+function setupHTML(inSheet) {
+  return `${inSheet ? '' : '<div class="page-head"><div><div class="eyebrow">BALL MARKERS</div><h2>Markers</h2></div></div>'}
+  <p style="line-height:1.8">記録はGitHubの非公開リポジトリ <code>markers-data</code> に保存されます。この端末で1回だけ、GitHubのキーを入れてください。</p>
+  <ol>
+    <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank">キーの作成ページ</a>を開く（Stubsのキーを編集して <code>markers-data</code> を足してもOK）</li>
+    <li>名前は「Markers」、期限は「No expiration」（または1年）</li>
+    <li>Repository access →「Only select repositories」→ <code>markers-data</code> を選ぶ</li>
+    <li>Permissions →「Contents」を <b>Read and write</b> に</li>
+    <li>一番下の「Generate token」→ 出てきた <code>github_pat_…</code> をコピー</li>
+  </ol>
+  <p class="muted" style="line-height:1.8;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px">💡 Claudeアプリなどの中のリンクから開くと、閉じるたびにキーが消えます。<b>Safariで開くか、ホーム画面のMarkersのアイコン</b>から開いてください。「パスワードを保存」と出たら保存しておくと、次からは顔認証で入ります。</p>
+  <form class="form" onsubmit="event.preventDefault();saveSettings()" action="#">
+    <input type="text" name="username" autocomplete="username" value="Markers" readonly style="position:absolute;opacity:0;height:0;width:0;pointer-events:none" tabindex="-1">
+    <label>GitHubのキー</label><input id="st-token" name="password" type="password" value="${esc(cfg.token || '')}" placeholder="github_pat_…" autocomplete="current-password">
+    <details style="margin-top:12px"><summary class="muted">保存先を変える</summary><input id="st-repo" value="${esc(cfg.repo)}"></details>
+    <div class="btns"><button class="btn primary" type="submit">つなぐ</button></div>
+  </form>`;
+}
+function openSettings() { openSheet(setupHTML(true)); }
+async function saveSettings() {
+  cfg.token = $('#st-token').value.trim();
+  const r = $('#st-repo'); if (r && r.value.trim()) cfg.repo = r.value.trim();
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  closeSheet(); await start();
+}
+async function start() {
+  try { navigator.storage?.persist?.(); } catch (e) {}
+  if (!cfg.token) { $('#setup').innerHTML = setupHTML(false); $('#setup').style.display = 'block'; $('#app').style.display = 'none'; return; }
+  const cache = localStorage.getItem(CACHE_KEY);
+  if (cache) { db = normalize(JSON.parse(cache)); show(); }
+  try { await pull(); show(); }
+  catch (e) {
+    if (e.status === 401 || e.status === 403 || e.status === 404) { toast('キーが違うか、権限が足りません'); $('#setup').innerHTML = setupHTML(false); $('#setup').style.display = 'block'; $('#app').style.display = 'none'; }
+    else toast('オフラインです（前回の内容を表示中）');
+  }
+}
+function show() { $('#setup').style.display = 'none'; $('#app').style.display = 'block'; renderAll(); }
+// ほかの端末やClaudeが書いた分を、画面に戻ってきたときに取り込む
+document.addEventListener('visibilitychange', async () => { if (!document.hidden && cfg.token) { try { await pull(); renderAll(); } catch (e) {} } });
+window.addEventListener('resize', () => { if (cfg.token && db.rounds.length) renderHome(); });
+start();
+</script>
+</body>
+</html>
