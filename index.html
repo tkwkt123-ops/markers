@@ -303,7 +303,10 @@
   .tabbar { background: rgba(255,255,255,.96); border-top: none; box-shadow: 0 -6px 20px rgba(0,0,0,.05); }
   .tabbar button.on { color: #79a694; }
   .coin svg { filter: drop-shadow(0 8px 14px rgba(0,0,0,.08)); }
-  .pr .tee { background: #eef5f1; border: none; }
+  .pr .tee { background: transparent; border: none; width: 50px; height: auto; border-radius: 0; }
+  .pr .tee small { margin-top: 0; }
+  .sticker { display: block; overflow: visible; }
+  .good-item .t .sticker { display: inline-block; vertical-align: -6px; margin-right: 4px; }
   .chip { background: #f2f2f2; border-radius: 12px; }
   .seg button { border: none; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
   .seg button.on { background: #79a694; color: #fff; box-shadow: 0 4px 12px rgba(121,166,148,.4); }
@@ -368,12 +371,20 @@
 
 <div class="sheet-bg" id="sheet-bg" onclick="closeSheet()"></div>
 <div class="sheet" id="sheet"><div class="grab" id="grab"></div><div class="wrap" id="sheet-body"></div></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="stk" x="-25%" y="-25%" width="150%" height="150%">
+    <feMorphology in="SourceAlpha" operator="dilate" radius="3.2" result="d"/>
+    <feGaussianBlur in="d" stdDeviation="1.8" result="b"/><feOffset in="b" dy="1.6" result="o"/>
+    <feFlood flood-color="#000" flood-opacity=".16"/><feComposite in2="o" operator="in" result="sh"/>
+    <feFlood flood-color="#fff"/><feComposite in2="d" operator="in" result="w"/>
+    <feMerge><feMergeNode in="sh"/><feMergeNode in="w"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter></defs></svg>
 <div class="toast" id="toast"></div>
 <div class="photo-view" id="photo-view" onclick="this.classList.remove('on')"><img alt=""></div>
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-10a';
+const APP_VERSION = '2026-11-10b';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -754,9 +765,37 @@ async function flushPendingNotes() {
 const PR_MIN = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300];
 const minLabel = m => m < 60 ? m + '分' : m % 60 ? `${Math.floor(m / 60)}時間${m % 60}分` : `${m / 60}時間`;
 const prIcon = () => '🏌️';
+/* 練習のシール：意味はなし。白いふちと影で、貼ったシールのように見せる（形は練習ごとに決まる） */
+const STICKERS = [
+  // レモンの輪切り
+  `<circle cx="32" cy="32" r="22" fill="#f6c945"/><circle cx="32" cy="32" r="18" fill="#fff6d1"/><circle cx="32" cy="32" r="16" fill="#f9d65b"/>${[0, 45, 90, 135].map(a => `<line x1="32" y1="16" x2="32" y2="48" stroke="#fff6d1" stroke-width="2.4" transform="rotate(${a} 32 32)"/>`).join('')}<circle cx="32" cy="32" r="2.5" fill="#fff6d1"/>`,
+  // カエル
+  `<circle cx="20" cy="23" r="8.5" fill="#8cc58a"/><circle cx="44" cy="23" r="8.5" fill="#8cc58a"/><ellipse cx="32" cy="37" rx="22" ry="17" fill="#8cc58a"/><circle cx="20" cy="23" r="5" fill="#fff"/><circle cx="44" cy="23" r="5" fill="#fff"/><circle cx="20.5" cy="24" r="2.4" fill="#3d4441"/><circle cx="44.5" cy="24" r="2.4" fill="#3d4441"/><ellipse cx="16" cy="40" rx="4" ry="2.5" fill="#f3a7a0"/><ellipse cx="48" cy="40" rx="4" ry="2.5" fill="#f3a7a0"/><path d="M27 41 Q32 45 37 41" stroke="#3d4441" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+  // ことり
+  `<path d="M30 16 q3 -7 7 -1" fill="#8ec1e0"/><circle cx="32" cy="34" r="19" fill="#8ec1e0"/><ellipse cx="35" cy="41" rx="11" ry="9" fill="#fff"/><ellipse cx="23" cy="37" rx="8" ry="6" fill="#6aa6cf"/><circle cx="39" cy="28" r="2.3" fill="#3d4441"/><circle cx="43" cy="34" r="2.4" fill="#f3a7a0"/><path d="M49 30 L57 33 L49 36 Z" fill="#f4a261"/>`,
+  // サボテン
+  `<rect x="14" y="16" width="6" height="12" rx="3" fill="#7fb77e"/><rect x="14" y="23" width="12" height="6" rx="3" fill="#7fb77e"/><rect x="44" y="19" width="6" height="13" rx="3" fill="#7fb77e"/><rect x="38" y="27" width="12" height="6" rx="3" fill="#7fb77e"/><rect x="25" y="12" width="14" height="34" rx="7" fill="#7fb77e"/><path d="M30 18 V40 M34 18 V40" stroke="#6aa36a" stroke-width="1.2"/><circle cx="32" cy="11" r="3.5" fill="#f7a1b5"/><path d="M20 46 L44 46 L41 58 L23 58 Z" fill="#f0a170"/><rect x="18" y="42" width="28" height="6" rx="2" fill="#e8895a"/>`,
+  // クラゲ
+  `<path d="M20 34 q-3 6 0 12 q3 6 0 11 M28 34 q3 7 0 14 M36 34 q-3 7 0 14 M44 34 q3 6 0 12 q-3 6 0 11" stroke="#a9cfe6" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M11 35 Q11 12 32 12 Q53 12 53 35 Q47 38 42 35 Q37 38 32 35 Q27 38 22 35 Q17 38 11 35 Z" fill="#c9e3f2"/><circle cx="26" cy="26" r="1.8" fill="#3d4441"/><circle cx="38" cy="26" r="1.8" fill="#3d4441"/><path d="M29 30 Q32 32 35 30" stroke="#3d4441" stroke-width="1.4" fill="none" stroke-linecap="round"/><ellipse cx="22" cy="30" rx="2.6" ry="1.6" fill="#f3a7a0"/><ellipse cx="42" cy="30" rx="2.6" ry="1.6" fill="#f3a7a0"/>`,
+  // おさかな
+  `<path d="M46 32 L58 21 L55 32 L58 43 Z" fill="#8ab8d8"/><path d="M8 32 Q20 15 38 20 Q50 25 50 32 Q50 39 38 44 Q20 49 8 32 Z" fill="#a3c9e2"/><path d="M12 34 Q24 44 40 40 Q30 46 18 42 Z" fill="#fff" opacity=".7"/><circle cx="19" cy="29" r="2.2" fill="#3d4441"/><circle cx="24" cy="34" r="2" fill="#f3a7a0"/><circle cx="54" cy="12" r="2.2" fill="none" stroke="#a3c9e2" stroke-width="1.4"/><circle cx="58" cy="6" r="1.4" fill="none" stroke="#a3c9e2" stroke-width="1.2"/>`,
+  // チューリップ
+  `<path d="M32 32 V57" stroke="#7fb77e" stroke-width="3.2" stroke-linecap="round"/><path d="M32 50 Q18 47 16 35 Q28 37 32 48 Z" fill="#8cc58a"/><path d="M32 52 Q44 48 47 40 Q36 41 32 50 Z" fill="#8cc58a"/><path d="M19 15 L24 30 Q32 37 40 30 L45 15 L38.5 22 L32 12 L25.5 22 Z" fill="#f497ad"/>`,
+  // ペンギン
+  `<ellipse cx="26" cy="56" rx="5" ry="2.6" fill="#f4a261"/><ellipse cx="38" cy="56" rx="5" ry="2.6" fill="#f4a261"/><ellipse cx="32" cy="34" rx="17" ry="21" fill="#3f5468"/><ellipse cx="32" cy="39" rx="11" ry="14" fill="#fff"/><ellipse cx="32" cy="27" rx="10" ry="8" fill="#fff"/><circle cx="27.5" cy="26" r="1.8" fill="#3d4441"/><circle cx="36.5" cy="26" r="1.8" fill="#3d4441"/><path d="M29 29 L35 29 L32 33 Z" fill="#f4a261"/><ellipse cx="24.5" cy="31" rx="2.4" ry="1.5" fill="#f3a7a0"/><ellipse cx="39.5" cy="31" rx="2.4" ry="1.5" fill="#f3a7a0"/>`,
+  // いちご
+  `<path d="M32 57 Q13 41 15 28 Q17 18 32 20 Q47 18 49 28 Q51 41 32 57 Z" fill="#ef6f6c"/>${[[24,30],[32,28],[40,30],[28,38],[36,38],[32,46],[22,38],[42,38]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="1.2" ry="1.8" fill="#ffe3a3"/>`).join('')}<path d="M22 20 L32 13 L42 20 L36 22 L32 17 L28 22 Z" fill="#7fb77e"/><path d="M32 13 V8" stroke="#6aa36a" stroke-width="2.2" stroke-linecap="round"/>`,
+  // きのこ
+  `<rect x="24" y="30" width="16" height="22" rx="7" fill="#fff2dd"/><circle cx="29" cy="40" r="1.6" fill="#3d4441"/><circle cx="35" cy="40" r="1.6" fill="#3d4441"/><path d="M30 44 Q32 46 34 44" stroke="#3d4441" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M10 33 Q10 11 32 11 Q54 11 54 33 Z" fill="#ef7b6c"/><circle cx="22" cy="22" r="3.6" fill="#fff"/><circle cx="36" cy="18" r="3" fill="#fff"/><circle cx="44" cy="27" r="2.6" fill="#fff"/><circle cx="29" cy="29" r="2" fill="#fff"/>`,
+];
+function hashStr(t) { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
+function sticker(id, size = 46) {
+  const h = hashStr(id || ''), art = STICKERS[h % STICKERS.length], rot = (h >> 8) % 25 - 12;
+  return `<svg class="sticker" width="${size}" height="${size}" viewBox="0 0 64 64" style="transform:rotate(${rot}deg)"><g filter="url(#stk)">${art}</g></svg>`;
+}
 function practiceRow(p) {
   return `<div class="pr" onclick="openPractice('${p.id}')">
-    <div class="tee">${prIcon()}<small>${md(p.date)}</small></div>
+    <div class="tee">${sticker(p.id)}<small>${md(p.date)}</small></div>
     <div class="b"><div class="t">${esc(['練習', p.minutes && minLabel(p.minutes), p.place].filter(Boolean).join('　'))}</div>
     <div class="g ${p.good ? '' : 'none'}">${p.good ? esc(p.good) : 'よかったことを書く'}</div></div>
     ${(p.photos || []).length ? `<div class="thumb"><img data-thumb="${esc(p.photos[0])}" alt="">${p.photos.length > 1 ? `<span>${p.photos.length}</span>` : ''}</div>` : ''}</div>`;
@@ -894,7 +933,7 @@ async function savePractice(btn) {
 function openPractice(id) {
   const p = db.practices.find(x => x.id === id); if (!p) return;
   openSheet(`<div class="detail-head" style="align-items:center">
-      <div class="tee" style="width:64px;height:64px;border-radius:50%;background:#eef5f1;border:1px solid #3d4441;display:flex;align-items:center;justify-content:center;font-size:30px;flex:none">${prIcon()}</div>
+      <div style="flex:none">${sticker(p.id, 78)}</div>
       <div><div class="muted">${p.date.replace(/-/g, '/')}</div><h3>練習${p.place ? `<span style="font-size:14px"> ・ ${esc(p.place)}</span>` : ''}</h3>
       <div class="chips">${p.minutes ? `<span class="chip">${minLabel(p.minutes)}</span>` : ''}</div></div></div>
     <div class="note-label">よかったこと</div>
@@ -929,10 +968,10 @@ async function delPractice(id) {
 }
 function renderGoods() {
   const items = [
-    ...db.practices.filter(p => p.good).map(p => ({ date: p.date, label: `${prIcon()} 練習${p.place ? '・' + p.place : ''}`, g: p.good, open: `openPractice('${p.id}')`, ph: (p.photos || [])[0] })),
+    ...db.practices.filter(p => p.good).map(p => ({ date: p.date, label: `練習${p.place ? '・' + p.place : ''}`, st: p.id, g: p.good, open: `openPractice('${p.id}')`, ph: (p.photos || [])[0] })),
     ...db.rounds.filter(r => r.good).map(r => ({ date: r.date, label: `⛳ ${shortCourse(r.course)}（${total(r) ?? '–'}）`, g: r.good, open: `openRound('${r.id}')` })),
   ].sort((a, b) => b.date.localeCompare(a.date));
-  $('#goods').innerHTML = items.length ? items.map(x => `<div class="good-item" onclick="${x.open}"><div class="gb"><div class="t">${x.date.replace(/-/g, '/')}　${esc(x.label)}</div><div class="g">${esc(x.g)}</div></div>${x.ph ? `<div class="thumb"><img data-thumb="${esc(x.ph)}" alt=""></div>` : ''}</div>`).join('')
+  $('#goods').innerHTML = items.length ? items.map(x => `<div class="good-item" onclick="${x.open}"><div class="gb"><div class="t">${x.st ? sticker(x.st, 22) : ''}${x.date.replace(/-/g, '/')}　${esc(x.label)}</div><div class="g">${esc(x.g)}</div></div>${x.ph ? `<div class="thumb"><img data-thumb="${esc(x.ph)}" alt=""></div>` : ''}</div>`).join('')
     : '<div class="empty">練習やラウンドの「よかったこと」がここにたまります</div>';
   loadThumbs();
 }
