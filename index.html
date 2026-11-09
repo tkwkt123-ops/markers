@@ -316,6 +316,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
+const APP_VERSION = '2026-11-09b';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -700,8 +701,9 @@ function practiceRow(p) {
     <div class="g ${p.good ? '' : 'none'}">${p.good ? '🌱 ' + esc(p.good) : 'よかったことを書く'}</div></div></div>`;
 }
 function openAdd() {
-  if (liveState()) { resumeLive(); toast('ラウンド中の続きを開きました'); return; }
+  const live = liveState();
   openSheet(`<h3>何を記録しますか？</h3>
+    ${live ? `<button class="live-banner" onclick="resumeLive()">⛳ ラウンド中の続き：${esc(shortCourse(live.draft.course))} ${live.idx + 1}番から</button>` : ''}
     <div class="choose"><button onclick="openPracticeEdit()"><span>🏌️</span>練習</button><button onclick="openEdit()"><span>⛳</span>ラウンド</button></div>`);
 }
 let pdraft = null;
@@ -1163,7 +1165,17 @@ async function start() {
 }
 function show() { $('#setup').style.display = 'none'; $('#app').style.display = 'block'; renderAll(); }
 // ほかの端末やClaudeが書いた分を、画面に戻ってきたときに取り込む
-document.addEventListener('visibilitychange', async () => { if (!document.hidden && cfg.token) { try { await pull(); renderAll(); } catch (e) {} } });
+document.addEventListener('visibilitychange', async () => { if (!document.hidden && cfg.token) { checkUpdate(); try { await pull(); renderAll(); } catch (e) {} } });
+async function checkUpdate() {
+  if (location.protocol === 'file:') return;
+  try {
+    const t = await (await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })).text();
+    const v = (t.match(/APP_VERSION = '([^']+)'/) || [])[1];
+    // 入力の途中（シートが開いている）ときは邪魔しない
+    if (v && v !== APP_VERSION && !$('#sheet').classList.contains('on')) location.reload();
+  } catch (e) {}
+}
+checkUpdate();
 window.addEventListener('resize', () => { if (cfg.token && db.rounds.length) renderHome(); });
 start();
 </script>
