@@ -306,6 +306,7 @@
   .pr .tee { background: transparent; border: none; width: 50px; height: auto; border-radius: 0; }
   .pr .tee small { margin-top: 0; }
   .sticker { display: block; overflow: visible; }
+  .month .theme { flex: 1; margin-left: 10px; font-family: var(--maru); font-size: 11px; font-weight: 500; color: #b0b5b3; display: flex; align-items: center; gap: 4px; }
   .good-item .t .sticker { display: inline-block; vertical-align: -6px; margin-right: 4px; }
   .chip { background: #f2f2f2; border-radius: 12px; }
   .seg button { border: none; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
@@ -389,7 +390,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-10c';
+const APP_VERSION = '2026-11-10d';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -648,7 +649,8 @@ function renderCoins(best) {
   let html = '';
   months.forEach(m => {
     const mr = rs.filter(r => r.date.startsWith(m)), mp = ps.filter(p => p.date.startsWith(m));
-    html += `<div class="month">${m.slice(0, 4)}年${+m.slice(5)}月<small>${[mr.length && `ラウンド${mr.length}回`, mp.length && `練習${mp.length}回`].filter(Boolean).join('・')}</small></div>`;
+    const th = MONTH_THEMES[+m.slice(5)];
+    html += `<div class="month">${m.slice(0, 4)}年${+m.slice(5)}月${mp.length ? `<span class="theme">${stickerArt(th[1][0], 18, -8)}${th[0]}</span>` : ''}<small>${[mr.length && `ラウンド${mr.length}回`, mp.length && `練習${mp.length}回`].filter(Boolean).join('・')}</small></div>`;
     html += mr.map(r => `<div class="coin-wrap" onclick="openRound('${r.id}')">${coinHTML(r, best)}</div>`).join('');
     if (mp.length) html += `<div class="practices">${mp.map(practiceRow).join('')}</div>`;
   });
@@ -805,14 +807,78 @@ const ICONS = {
   gear: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
 };
 const icon = (n, size = 22) => `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
+// 顔（目・口・ほっぺ）
+const FACE = (x, y, k = 1, mouth = true) => `<circle cx="${x - 5 * k}" cy="${y}" r="${1.7 * k}" fill="#3d4441"/><circle cx="${x + 5 * k}" cy="${y}" r="${1.7 * k}" fill="#3d4441"/>${mouth ? `<path d="M${x - 2.5 * k} ${y + 3 * k} Q${x} ${y + 5 * k} ${x + 2.5 * k} ${y + 3 * k}" stroke="#3d4441" stroke-width="1.4" fill="none" stroke-linecap="round"/>` : ''}<ellipse cx="${x - 9 * k}" cy="${y + 3 * k}" rx="${2.4 * k}" ry="${1.5 * k}" fill="#f3a7a0"/><ellipse cx="${x + 9 * k}" cy="${y + 3 * k}" rx="${2.4 * k}" ry="${1.5 * k}" fill="#f3a7a0"/>`;
+const [LEMON, FROG, BIRD, CACTUS, JELLY, FISH, TULIP, PENGUIN, STRAWBERRY, MUSHROOM] = STICKERS;
+const ART = {
+  mikan: `<circle cx="32" cy="36" r="19" fill="#f6a33b"/><circle cx="25" cy="29" r="3" fill="#fff" opacity=".35"/><path d="M32 17 q6 -7 12 -2 q-6 5 -12 2z" fill="#7fb77e"/><circle cx="32" cy="18" r="2" fill="#6aa36a"/>${FACE(32, 38, .9)}`,
+  kagami: `<rect x="14" y="48" width="36" height="8" rx="2" fill="#e8665d"/><ellipse cx="32" cy="44" rx="20" ry="8" fill="#fff8ec" stroke="#e6d8c0" stroke-width="1.2"/><ellipse cx="32" cy="35" rx="15" ry="7" fill="#fff8ec" stroke="#e6d8c0" stroke-width="1.2"/><circle cx="32" cy="24" r="6.5" fill="#f6a33b"/><path d="M32 18 q4 -4 7 -1 q-3 3 -7 1z" fill="#7fb77e"/>`,
+  fuji: `<path d="M5 52 L26 18 Q32 14 38 18 L59 52 Z" fill="#6f9fca"/><path d="M22 25 L26 18 Q32 14 38 18 L42 25 L38 23 L35 27 L32 23 L29 27 L26 23 Z" fill="#fff"/><circle cx="50" cy="15" r="6" fill="#f08a7e"/>`,
+  kite: `<path d="M32 60 q-4 -3 0 -6 q4 -3 0 -6" stroke="#f6c945" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M32 6 L52 26 L32 46 L12 26 Z" fill="#f08a7e"/><path d="M32 6 V46 M12 26 H52" stroke="#fff" stroke-width="1.5" opacity=".6"/>${FACE(32, 26, .8)}`,
+  daruma: `<ellipse cx="32" cy="36" rx="20" ry="21" fill="#e8665d"/><ellipse cx="32" cy="32" rx="12" ry="11" fill="#fff6ea"/><circle cx="27.5" cy="31" r="2.2" fill="#3d4441"/><circle cx="36.5" cy="31" r="2.2" fill="#3d4441"/><path d="M29 37 Q32 39 35 37" stroke="#3d4441" stroke-width="1.4" fill="none"/><path d="M22 50 Q32 54 42 50" stroke="#f6c945" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+  snowman: `<circle cx="32" cy="45" r="14" fill="#fff" stroke="#dfe7ec" stroke-width="1.4"/><circle cx="32" cy="24" r="11" fill="#fff" stroke="#dfe7ec" stroke-width="1.4"/>${FACE(32, 24, .7)}<path d="M21 31 Q32 36 43 31 L43 35 Q32 40 21 35 Z" fill="#e8665d"/><path d="M24 14 L40 14 L37 5 L27 5 Z" fill="#5d7a9a"/>`,
+  choco: `<path d="M32 55 Q9 38 11 24 Q13 11 26 13 Q30 14 32 19 Q34 14 38 13 Q51 11 53 24 Q55 38 32 55 Z" fill="#8a5a44"/><path d="M32 47 Q17 36 18 26 Q20 19 27 20 Q30 21 32 24 Q34 21 37 20 Q44 19 46 26 Q47 36 32 47 Z" fill="#a8735a"/><path d="M26 29 q6 4 12 0" stroke="#f3a7a0" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+  mitten: `<path d="M44 30 Q53 28 53 36 Q53 43 44 42 Z" fill="#8fb5d8"/><path d="M20 50 L20 26 Q20 12 32 12 Q44 12 44 26 L44 50 Z" fill="#8fb5d8"/><path d="M25 24 h14 M25 32 h14" stroke="#fff" stroke-width="2" stroke-dasharray="3 3"/><rect x="18" y="48" width="28" height="9" rx="3" fill="#fff" stroke="#dfe7ec"/>`,
+  ume: `${[0, 72, 144, 216, 288].map(a => `<circle cx="32" cy="19" r="9.5" fill="#f6a9b8" transform="rotate(${a} 32 32)"/>`).join('')}<circle cx="32" cy="32" r="6" fill="#f6c945"/>`,
+  sakura: `${[0, 72, 144, 216, 288].map(a => `<path d="M32 32 Q21 22 26 11 L32 15 L38 11 Q43 22 32 32Z" fill="#f8c4cf" transform="rotate(${a} 32 32)"/>`).join('')}<circle cx="32" cy="32" r="4" fill="#f39bb0"/>`,
+  butterfly: `<ellipse cx="21" cy="24" rx="11" ry="10" fill="#f6c945"/><ellipse cx="43" cy="24" rx="11" ry="10" fill="#f6c945"/><ellipse cx="23" cy="42" rx="8" ry="7" fill="#f8b7a0"/><ellipse cx="41" cy="42" rx="8" ry="7" fill="#f8b7a0"/><rect x="29.5" y="16" width="5" height="32" rx="2.5" fill="#5d6b66"/><path d="M31 16 q-4 -8 -8 -8 M33 16 q4 -8 8 -8" stroke="#5d6b66" stroke-width="1.4" fill="none" stroke-linecap="round"/>`,
+  chick: `<path d="M28 19 q2 -7 5 -1 q3 -5 4 2" fill="#f9d65b"/><circle cx="32" cy="37" r="18" fill="#f9d65b"/>${FACE(32, 34, .9, false)}<path d="M29 39 L35 39 L32 43 Z" fill="#f4a261"/>`,
+  dango: `<path d="M32 61 V5" stroke="#c9a37a" stroke-width="2.5" stroke-linecap="round"/><circle cx="32" cy="16" r="8.5" fill="#f6a9b8"/><circle cx="32" cy="32" r="8.5" fill="#fff6ea" stroke="#eadfcb"/><circle cx="32" cy="48" r="8.5" fill="#9cc98a"/>`,
+  ladybug: `<circle cx="32" cy="38" r="17" fill="#e8665d"/><path d="M32 22 V55" stroke="#3d4441" stroke-width="1.6"/>${[[24, 33], [40, 33], [25, 46], [39, 46]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3" fill="#3d4441"/>`).join('')}<circle cx="32" cy="21" r="8" fill="#3d4441"/><circle cx="29" cy="20" r="1.5" fill="#fff"/><circle cx="35" cy="20" r="1.5" fill="#fff"/>`,
+  koinobori: `<path d="M8 21 L44 21 Q57 29 44 37 L8 37 L14 29 Z" fill="#6f9fca"/><circle cx="40" cy="27" r="3.6" fill="#fff"/><circle cx="40.5" cy="27" r="1.8" fill="#3d4441"/><path d="M20 25 q4 4 0 8 M28 25 q4 4 0 8" stroke="#fff" stroke-width="1.6" fill="none"/><path d="M10 43 L40 43 Q51 49 40 55 L10 55 L15 49 Z" fill="#f08a7e"/><circle cx="37" cy="48" r="2.8" fill="#fff"/><circle cx="37.4" cy="48" r="1.4" fill="#3d4441"/>`,
+  leaves: `<path d="M32 57 V34" stroke="#6aa36a" stroke-width="3" stroke-linecap="round"/><path d="M32 36 Q13 34 11 17 Q28 17 32 36Z" fill="#9cc98a"/><path d="M32 34 Q49 30 53 11 Q34 13 32 34Z" fill="#7fb77e"/>`,
+  snail: `<ellipse cx="31" cy="51" rx="23" ry="5" fill="#c9dcb8"/><path d="M8 51 Q8 41 21 43 L47 43 Q54 43 54 51 Z" fill="#f2d7a8"/><path d="M48 43 l2 -11 M53 43 l4 -10" stroke="#e8c58e" stroke-width="2" stroke-linecap="round"/><circle cx="50" cy="31" r="2" fill="#3d4441"/><circle cx="57" cy="32" r="2" fill="#3d4441"/><circle cx="29" cy="31" r="14" fill="#c99a7a"/><path d="M29 31 m0 -8 a8 8 0 1 1 -8 8 a5 5 0 1 1 5 -5" stroke="#a87a5a" stroke-width="2" fill="none"/>`,
+  hydrangea: `<path d="M32 50 V60" stroke="#7fb77e" stroke-width="3"/><path d="M32 55 Q18 57 14 47 Q26 47 32 55Z" fill="#8cc58a"/>${[[24, 21, '#9bb8e8'], [37, 19, '#b9a6e0'], [45, 30, '#8fc3e8'], [19, 33, '#b9a6e0'], [32, 31, '#9bb8e8'], [41, 42, '#b9a6e0'], [26, 43, '#8fc3e8']].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="8" fill="${c}"/><circle cx="${x}" cy="${y}" r="1.4" fill="#fff"/>`).join('')}`,
+  umbrella: `<path d="M50 44 q3 5 0 7 q-3 -2 0 -7z M56 34 q3 5 0 7 q-3 -2 0 -7z" fill="#8fc3e8"/><path d="M32 30 V51 Q32 58 25 56" stroke="#5d6b66" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M7 31 Q7 9 32 9 Q57 9 57 31 Q51 27 45 31 Q38 27 32 31 Q26 27 19 31 Q13 27 7 31Z" fill="#f08a7e"/><path d="M19 31 Q20 14 32 9 Q44 14 45 31" stroke="#fff" stroke-width="1.5" fill="none" opacity=".6"/>`,
+  boot: `<path d="M22 12 L38 12 L38 40 L51 43 Q57 45 55 55 L22 55 Z" fill="#f6c945"/><rect x="20" y="8" width="20" height="7" rx="2.5" fill="#e8b830"/><path d="M22 55 L55 55" stroke="#e0a520" stroke-width="3" stroke-linecap="round"/>`,
+  watermelon: `<path d="M6 24 A26 26 0 0 0 58 24 Z" fill="#7fb77e"/><path d="M10 24 A22 22 0 0 0 54 24 Z" fill="#fff"/><path d="M12 24 A20 20 0 0 0 52 24 Z" fill="#f0706a"/>${[[23, 31], [32, 37], [41, 31], [27, 27], [37, 27]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="1.4" ry="2.2" fill="#3d4441"/>`).join('')}`,
+  kakigori: `<path d="M16 34 L48 34 L42 56 L22 56 Z" fill="#9cc3d9"/><path d="M14 34 Q14 14 32 12 Q50 14 50 34 Z" fill="#fff" stroke="#e5e5e5" stroke-width="1.2"/><path d="M16 26 Q20 17 32 15 Q44 17 48 28 Q40 22 32 26 Q22 22 16 26Z" fill="#f08a7e"/><path d="M40 12 L47 3" stroke="#f6c945" stroke-width="3" stroke-linecap="round"/>`,
+  goldfish: `<path d="M44 32 L58 20 Q54 32 58 44 Z" fill="#f4a08a"/><path d="M25 22 Q30 13 37 21" fill="#ef6f5c"/><ellipse cx="30" cy="32" rx="17" ry="12" fill="#ef6f5c"/><circle cx="20" cy="29" r="2.2" fill="#3d4441"/><circle cx="11" cy="17" r="2.4" fill="none" stroke="#8fc3e8" stroke-width="1.4"/><circle cx="6" cy="9" r="1.5" fill="none" stroke="#8fc3e8" stroke-width="1.2"/>`,
+  sunflower: `${Array.from({ length: 12 }, (_, i) => `<ellipse cx="32" cy="13" rx="5" ry="9" fill="#f6c945" transform="rotate(${i * 30} 32 30)"/>`).join('')}<circle cx="32" cy="30" r="10" fill="#9a6b4b"/>${[[29, 27], [35, 27], [32, 32], [28, 33], [36, 33]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.2" fill="#c99a6e"/>`).join('')}`,
+  asagao: `<circle cx="32" cy="32" r="22" fill="#8e9fe0"/>${[0, 72, 144, 216, 288].map(a => `<path d="M32 32 L32 11" stroke="#fff" stroke-width="2" transform="rotate(${a} 32 32)" opacity=".6"/>`).join('')}<circle cx="32" cy="32" r="9" fill="#fff"/><circle cx="32" cy="32" r="3" fill="#f6e08a"/>`,
+  shell: `<path d="M32 54 L10 30 Q12 11 32 9 Q52 11 54 30 Z" fill="#f8c4b4"/>${[-40, -20, 0, 20, 40].map(a => `<path d="M32 52 L32 14" stroke="#f0a090" stroke-width="2" transform="rotate(${a} 32 52)"/>`).join('')}<rect x="26" y="50" width="12" height="7" rx="3" fill="#f0a090"/>`,
+  ukiwa: `<circle cx="32" cy="32" r="22" fill="#f08a7e"/>${[0, 90, 180, 270].map(a => `<path d="M32 10 A22 22 0 0 1 47.6 16.4 L38.4 25.6 A9 9 0 0 0 32 23 Z" fill="#fff" transform="rotate(${a} 32 32)"/>`).join('')}<circle cx="32" cy="32" r="9" fill="#c9e3f2"/>`,
+  moon: `<circle cx="32" cy="32" r="22" fill="#f6dc7a"/><circle cx="24" cy="25" r="3.2" fill="#ecc95a"/><circle cx="41" cy="38" r="4.2" fill="#ecc95a"/><circle cx="37" cy="21" r="2" fill="#ecc95a"/><circle cx="25" cy="42" r="2.4" fill="#ecc95a"/>`,
+  rabbit: `<ellipse cx="25" cy="16" rx="5" ry="13" fill="#fff" stroke="#e6e0d6"/><ellipse cx="39" cy="16" rx="5" ry="13" fill="#fff" stroke="#e6e0d6"/><ellipse cx="25" cy="17" rx="2.2" ry="8" fill="#f6b8c4"/><ellipse cx="39" cy="17" rx="2.2" ry="8" fill="#f6b8c4"/><ellipse cx="32" cy="40" rx="18" ry="16" fill="#fff" stroke="#e6e0d6"/>${FACE(32, 40, .9)}`,
+  tsukimi: `<path d="M10 52 L54 52 L47 59 L17 59 Z" fill="#c99a6e"/>${[[21, 45], [32, 45], [43, 45], [26.5, 34], [37.5, 34], [32, 23]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="6.2" fill="#fff8ec" stroke="#e6d8c0" stroke-width="1.1"/>`).join('')}`,
+  susuki: `<path d="M22 61 Q24 34 18 14 M32 61 Q32 32 34 9 M42 61 Q40 36 48 16" stroke="#b9a678" stroke-width="2.2" fill="none"/><path d="M18 14 q-7 8 -2 17 q7 -7 2 -17z M34 9 q-7 9 -2 19 q8 -8 2 -19z M48 16 q-7 8 -3 17 q8 -7 3 -17z" fill="#e6d3a3"/>`,
+  grape: `<path d="M32 12 V5" stroke="#8a6244" stroke-width="2.5" stroke-linecap="round"/><path d="M33 9 Q44 2 50 10 Q42 15 33 9Z" fill="#7fb77e"/>${[[26, 20], [38, 20], [20, 31], [32, 31], [44, 31], [26, 42], [38, 42], [32, 53]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="6.6" fill="#9b7fc4"/><circle cx="${x - 2}" cy="${y - 2}" r="1.5" fill="#fff" opacity=".4"/>`).join('')}`,
+  acorn: `<path d="M18 30 Q18 54 32 58 Q46 54 46 30 Z" fill="#c9915e"/><path d="M14 30 Q14 16 32 16 Q50 16 50 30 Z" fill="#8a6244"/><path d="M32 16 V9" stroke="#8a6244" stroke-width="3" stroke-linecap="round"/><path d="M19 25 h26" stroke="#a57a58" stroke-width="1.5" stroke-dasharray="2 2"/>${FACE(32, 42, .8)}`,
+  maple: `<path d="M32 56 V62" stroke="#c9644a" stroke-width="2.5" stroke-linecap="round"/><path d="M32 6 L37 20 L50 14 L45 27 L58 30 L46 36 L50 48 L37 42 L32 56 L27 42 L14 48 L18 36 L6 30 L19 27 L14 14 L27 20 Z" fill="#ec7b5a" stroke="#ec7b5a" stroke-width="2" stroke-linejoin="round"/>`,
+  pumpkin: `<ellipse cx="32" cy="38" rx="22" ry="17" fill="#f4a24a"/><path d="M22 23 Q16 38 22 54 M42 23 Q48 38 42 54 M32 21 V55" stroke="#e08a30" stroke-width="2" fill="none"/><path d="M32 22 q0 -8 6 -10" stroke="#7fb77e" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+  chestnut: `<path d="M32 10 Q50 26 50 40 Q50 54 32 54 Q14 54 14 40 Q14 26 32 10Z" fill="#9a6b4b"/><path d="M16 42 Q32 50 48 42 Q48 54 32 54 Q16 54 16 42Z" fill="#e8d0a8"/><circle cx="26" cy="26" r="3" fill="#fff" opacity=".3"/>`,
+  imo: `<path d="M8 40 Q14 18 36 18 Q56 20 56 34 Q52 50 30 50 Q10 50 8 40Z" fill="#a0577a"/><path d="M14 38 Q20 28 34 28 Q48 28 50 36 Q46 44 30 44 Q16 44 14 38Z" fill="#f6c945"/><path d="M30 14 q3 -5 0 -9 M38 15 q3 -5 0 -9" stroke="#d9d9d9" stroke-width="2" fill="none" stroke-linecap="round"/>`,
+  pinecone: `<path d="M32 58 Q14 44 18 26 Q22 10 32 8 Q42 10 46 26 Q50 44 32 58Z" fill="#a8774f"/>${[20, 30, 40, 49].map((y, i) => `<path d="M${19 + i} ${y} q${3.2 - i * .3} 4 ${6.5 - i * .6} 0 q${3.2 - i * .3} 4 ${6.5 - i * .6} 0 q${3.2 - i * .3} 4 ${6.5 - i * .6} 0 q${3.2 - i * .3} 4 ${6.5 - i * .6} 0" stroke="#d1a57a" stroke-width="1.6" fill="none"/>`).join('')}`,
+  scarf: `<path d="M36 32 L46 57 L38 60 L30 34 Z" fill="#e8665d"/><path d="M10 19 Q32 29 54 19 L54 29 Q32 39 10 29 Z" fill="#e8665d"/><path d="M15 22 v8 M23 25 v8 M31 26 v8 M41 26 v8 M49 23 v8" stroke="#f5a59c" stroke-width="2"/><path d="M39 59 l1 4 M43 58 l1 4" stroke="#e8665d" stroke-width="2" stroke-linecap="round"/>`,
+  tree: `<rect x="28" y="47" width="8" height="10" rx="1.5" fill="#a8774f"/><path d="M32 7 L50 30 L42 30 L54 48 L10 48 L22 30 L14 30 Z" fill="#6fae7a"/>${[[26, 26, '#f08a7e'], [38, 38, '#f6c945'], [24, 42, '#8fc3e8'], [36, 23, '#f6c945'], [42, 44, '#f08a7e']].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="2.6" fill="${c}"/>`).join('')}<path d="M32 1 l2.2 4.4 4.8 .6 -3.5 3.3 .9 4.7 -4.4 -2.3 -4.4 2.3 .9 -4.7 -3.5 -3.3 4.8 -.6z" fill="#f6c945"/>`,
+  present: `<rect x="12" y="27" width="40" height="29" rx="3" fill="#8fb5d8"/><rect x="10" y="20" width="44" height="10" rx="3" fill="#a6c6e6"/><rect x="29" y="20" width="6" height="36" fill="#f08a7e"/><path d="M32 20 Q22 7 17 15 Q19 22 32 20 Q45 22 47 15 Q42 7 32 20Z" fill="#f08a7e"/>`,
+  snowflake: `${[0, 60, 120].map(a => `<path d="M32 7 V57 M26 13 L32 19 L38 13 M26 51 L32 45 L38 51" stroke="#8fb5d8" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round" transform="rotate(${a} 32 32)"/>`).join('')}<circle cx="32" cy="32" r="3" fill="#8fb5d8"/>`,
+  sock: `<path d="M22 10 L40 10 L40 38 Q40 53 27 55 L16 55 Q9 55 9 48 Q9 42 16 42 L22 42 Z" fill="#e8665d"/><path d="M22 28 h18 M22 34 h18" stroke="#fff" stroke-width="2.2" opacity=".7"/><rect x="20" y="6" width="22" height="9" rx="3" fill="#fff" stroke="#e5e5e5"/>`,
+};
+// 月ごとのシールのテーマ（その月の練習には、この中からどれかが貼られる）
+const MONTH_THEMES = {
+  1: ['お正月', [ART.kagami, ART.fuji, ART.kite, ART.daruma, ART.mikan]],
+  2: ['ふゆ', [ART.snowman, ART.choco, ART.mitten, ART.ume, PENGUIN]],
+  3: ['はるのはじまり', [ART.sakura, STRAWBERRY, ART.butterfly, ART.chick, ART.ume]],
+  4: ['おはなみ', [ART.sakura, ART.dango, TULIP, ART.ladybug, BIRD]],
+  5: ['しんりょく', [ART.koinobori, ART.leaves, FROG, CACTUS, ART.ladybug]],
+  6: ['つゆ', [ART.snail, ART.hydrangea, ART.umbrella, ART.boot, FROG]],
+  7: ['なつ', [ART.watermelon, ART.kakigori, ART.goldfish, ART.sunflower, ART.asagao]],
+  8: ['うみ', [JELLY, FISH, ART.shell, ART.ukiwa, LEMON]],
+  9: ['おつきみ', [ART.moon, ART.rabbit, ART.tsukimi, ART.susuki, ART.grape]],
+  10: ['あき', [ART.acorn, ART.maple, MUSHROOM, ART.pumpkin, ART.chestnut]],
+  11: ['ふゆじたく', [ART.mikan, ART.imo, ART.pinecone, ART.scarf, BIRD]],
+  12: ['クリスマス', [ART.tree, ART.present, ART.snowflake, ART.sock, PENGUIN]],
+};
 function hashStr(t) { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
-function sticker(id, size = 46) {
-  const h = hashStr(id || ''), art = STICKERS[h % STICKERS.length], rot = (h >> 8) % 25 - 12;
+function sticker(id, size = 46, date) {
+  const h = hashStr(id || ''), rot = (h >> 8) % 25 - 12;
+  const set = date ? MONTH_THEMES[+date.slice(5, 7)][1] : STICKERS, art = set[h % set.length];
   return `<svg class="sticker" width="${size}" height="${size}" viewBox="0 0 64 64" style="transform:rotate(${rot}deg)"><g filter="url(#stk)">${art}</g></svg>`;
 }
 function practiceRow(p) {
   return `<div class="pr" onclick="openPractice('${p.id}')">
-    <div class="tee">${sticker(p.id)}<small>${md(p.date)}</small></div>
+    <div class="tee">${sticker(p.id, 46, p.date)}<small>${md(p.date)}</small></div>
     <div class="b"><div class="t">${esc(['練習', p.minutes && minLabel(p.minutes), p.place].filter(Boolean).join('　'))}</div>
     <div class="g ${p.good ? '' : 'none'}">${p.good ? esc(p.good) : 'よかったことを書く'}</div></div>
     ${(p.photos || []).length ? `<div class="thumb"><img data-thumb="${esc(p.photos[0])}" alt="">${p.photos.length > 1 ? `<span>${p.photos.length}</span>` : ''}</div>` : ''}</div>`;
@@ -850,7 +916,7 @@ function openAdd() {
   const live = liveState();
   openSheet(`<h3>何を記録しますか？</h3>
     ${live ? `<button class="live-banner" onclick="resumeLive()">ラウンド中の続き：${esc(shortCourse(live.draft.course))} ${live.idx + 1}番から</button>` : ''}
-    <div class="choose"><button onclick="openPracticeEdit()">${stickerArt(STICKERS[1], 56, -8)}練習</button><button onclick="openEdit()">${stickerArt(FLAG_ART, 56, 6)}ラウンド</button></div>`);
+    <div class="choose"><button onclick="openPracticeEdit()">${stickerArt(MONTH_THEMES[new Date().getMonth() + 1][1][0], 56, -8)}練習</button><button onclick="openEdit()">${stickerArt(FLAG_ART, 56, 6)}ラウンド</button></div>`);
 }
 let pdraft = null;
 function openPracticeEdit(id) {
@@ -950,7 +1016,7 @@ async function savePractice(btn) {
 function openPractice(id) {
   const p = db.practices.find(x => x.id === id); if (!p) return;
   openSheet(`<div class="detail-head" style="align-items:center">
-      <div style="flex:none">${sticker(p.id, 78)}</div>
+      <div style="flex:none">${sticker(p.id, 78, p.date)}</div>
       <div><div class="muted">${p.date.replace(/-/g, '/')}</div><h3>練習${p.place ? `<span style="font-size:14px"> ・ ${esc(p.place)}</span>` : ''}</h3>
       <div class="chips">${p.minutes ? `<span class="chip">${minLabel(p.minutes)}</span>` : ''}</div></div></div>
     <div class="note-label">よかったこと</div>
@@ -985,10 +1051,10 @@ async function delPractice(id) {
 }
 function renderGoods() {
   const items = [
-    ...db.practices.filter(p => p.good).map(p => ({ date: p.date, label: `練習${p.place ? '・' + p.place : ''}`, st: p.id, g: p.good, open: `openPractice('${p.id}')`, ph: (p.photos || [])[0] })),
+    ...db.practices.filter(p => p.good).map(p => ({ date: p.date, label: `練習${p.place ? '・' + p.place : ''}`, st: p.id, sd: p.date, g: p.good, open: `openPractice('${p.id}')`, ph: (p.photos || [])[0] })),
     ...db.rounds.filter(r => r.good).map(r => ({ date: r.date, label: `${shortCourse(r.course)}（${total(r) ?? '–'}）`, flag: true, g: r.good, open: `openRound('${r.id}')` })),
   ].sort((a, b) => b.date.localeCompare(a.date));
-  $('#goods').innerHTML = items.length ? items.map(x => `<div class="good-item" onclick="${x.open}"><div class="gb"><div class="t">${x.st ? sticker(x.st, 22) : x.flag ? stickerArt(FLAG_ART, 22) : ''}${x.date.replace(/-/g, '/')}　${esc(x.label)}</div><div class="g">${esc(x.g)}</div></div>${x.ph ? `<div class="thumb"><img data-thumb="${esc(x.ph)}" alt=""></div>` : ''}</div>`).join('')
+  $('#goods').innerHTML = items.length ? items.map(x => `<div class="good-item" onclick="${x.open}"><div class="gb"><div class="t">${x.st ? sticker(x.st, 22, x.sd) : x.flag ? stickerArt(FLAG_ART, 22) : ''}${x.date.replace(/-/g, '/')}　${esc(x.label)}</div><div class="g">${esc(x.g)}</div></div>${x.ph ? `<div class="thumb"><img data-thumb="${esc(x.ph)}" alt=""></div>` : ''}</div>`).join('')
     : '<div class="empty">練習やラウンドの「よかったこと」がここにたまります</div>';
   loadThumbs();
 }
