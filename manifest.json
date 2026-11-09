@@ -3,7 +3,7 @@
   "short_name": "Markers",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#efe9d8",
-  "theme_color": "#6d9fb8",
+  "background_color": "#efefef",
+  "theme_color": "#efefef",
   "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
 }

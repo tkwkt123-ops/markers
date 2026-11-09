@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#6d9fb8">
+<meta name="theme-color" content="#efefef">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Markers">
 <link rel="apple-touch-icon" href="icon.png">
@@ -11,25 +11,25 @@
 <title>Markers — ゴルフの記録</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Maru+Gothic:wght@400;500;700&family=Klee+One:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #efe9d8;
-    --card: #f8f3e6;
-    --ink: #2e4448;
-    --ink-soft: #7d8682;
-    --line: #ded6c0;
-    --grass: #8dc3bc;
-    --fairway: #4686a5;
-    --green: #757145;
-    --sky: #8fb9cc;
-    --sand: #e2d3b0;
-    --sand-deep: #d8895a;
-    --flag: #cf6f45;
-    --gold: #d9a54a;
-    --mincho: "Shippori Mincho", "Hiragino Mincho ProN", serif;
-    --maru: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
-    --hand: "Klee One", "Zen Maru Gothic", sans-serif;
+    --paper: #efefef;
+    --card: #ffffff;
+    --ink: #3d4441;
+    --ink-soft: #a2a8a5;
+    --line: #e7e7e7;
+    --grass: #bcd3c9;
+    --fairway: #79a694;
+    --green: #c4c7c5;
+    --sky: #9cc3d9;
+    --sand: #f6d9cd;
+    --sand-deep: #f4b097;
+    --flag: #ea9f86;
+    --gold: #f2c46d;
+    --mincho: "DM Sans", "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
+    --maru: "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
+    --hand: "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
     --tab-h: 64px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -39,11 +39,11 @@
   /* 夏の空と入道雲（上）から、砂浜のクリーム（下）へ */
   body::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 560px; z-index: -1; pointer-events: none;
     background:
-      radial-gradient(30% 11% at 78% 7%, #ece6d3 55%, transparent 72%),
-      radial-gradient(20% 8% at 60% 12%, #e2ddcb 50%, transparent 72%),
+      radial-gradient(30% 11% at 78% 7%, #ffffff 55%, transparent 72%),
+      radial-gradient(20% 8% at 60% 12%, #ffffff 50%, transparent 72%),
       radial-gradient(26% 9% at 10% 10%, rgba(236,230,211,.85) 45%, transparent 72%),
       radial-gradient(34% 12% at 84% 9%, rgba(182,182,172,.55) 50%, transparent 74%),
-      linear-gradient(180deg, #6d9fb8 0, #a9c6cf 220px, #efe9d8 520px); }
+      linear-gradient(180deg, #efefef 0, #efefef 220px, #efefef 520px); }
   /* 紙のざらつき */
   body::after { content: ""; position: fixed; inset: 0; z-index: 70; pointer-events: none; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.3  0 0 0 0 0.25  0 0 0 0 0.2  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); background-size: 160px; opacity: .16; mix-blend-mode: multiply; }
   button { font-family: inherit; color: inherit; }
@@ -59,12 +59,12 @@
   .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; padding: 4px; opacity: .7; }
 
   /* タブバー */
-  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--tab-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: rgba(239,233,216,.92); backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; z-index: 20; }
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--tab-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: rgba(255,255,255,.95); backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; z-index: 20; }
   .tabbar button { flex: 1; background: none; border: none; font-size: 10px; color: var(--ink-soft); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; letter-spacing: .05em; }
   .tabbar button .ic { font-size: 19px; line-height: 1; filter: grayscale(1); opacity: .6; }
   .tabbar button.on { color: var(--fairway); font-weight: 700; }
   .tabbar button.on .ic { filter: none; opacity: 1; }
-  .fab { position: fixed; right: max(18px, calc(50% - 360px)); bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px); width: 58px; height: 58px; border-radius: 50%; border: none; background: var(--flag); color: #fff; font-size: 30px; box-shadow: 3px 3px 0 rgba(36,64,76,.16); cursor: pointer; z-index: 21; }
+  .fab { position: fixed; right: max(18px, calc(50% - 360px)); bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px); width: 58px; height: 58px; border-radius: 50%; border: none; background: var(--flag); color: #fff; font-size: 30px; box-shadow: 3px 3px 0 rgba(0,0,0,.16); cursor: pointer; z-index: 21; }
 
   /* まとめの数字 */
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 14px; }
@@ -80,7 +80,7 @@
   .trend svg { display: block; }
   .trend .coin-pt { cursor: pointer; }
   .trend-legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-soft); padding: 2px 14px 6px; }
-  .trend-legend i { display: inline-block; width: 16px; height: 0; border-top: 1.5px dashed #7d8682; margin-right: 4px; vertical-align: 3px; }
+  .trend-legend i { display: inline-block; width: 16px; height: 0; border-top: 1.5px dashed #a2a8a5; margin-right: 4px; vertical-align: 3px; }
   .trend-tabs { display: flex; align-items: center; padding: 2px 12px 4px; }
 
   /* マーカー（コイン） */
@@ -107,7 +107,7 @@
   .mini-scroll svg { display: block; }
   .bars { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
   .bar { display: grid; grid-template-columns: 70px 1fr 44px; gap: 8px; align-items: center; font-size: 12px; }
-  .bar .track { height: 12px; background: #efe9d6; border-radius: 6px; overflow: hidden; }
+  .bar .track { height: 12px; background: #f1f1f1; border-radius: 6px; overflow: hidden; }
   .bar .fill { height: 100%; border-radius: 6px; }
   .courses { width: 100%; border-collapse: collapse; font-size: 13px; }
   .courses td { padding: 7px 4px; border-bottom: 1px solid var(--line); }
@@ -119,7 +119,7 @@
   .sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow-y: auto; background: var(--paper); border-radius: 18px 18px 0 0; z-index: 41; transform: translateY(100%); transition: transform .28s ease; padding: 10px 0 calc(env(safe-area-inset-bottom) + 24px); }
   .sheet.on { transform: none; }
   .sheet.dragging { transition: none; }
-  .sheet .grab { width: 44px; height: 5px; border-radius: 3px; background: #cfc6b2; margin: 0 auto 12px; cursor: grab; }
+  .sheet .grab { width: 44px; height: 5px; border-radius: 3px; background: #dddddd; margin: 0 auto 12px; cursor: grab; }
   .sheet .wrap { max-width: 640px; }
 
   /* ラウンド詳細 */
@@ -127,13 +127,13 @@
   .detail-head .coin { width: 108px; height: 108px; flex: none; margin: 0; }
   .detail-head h3 { font-size: 19px; line-height: 1.35; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .chip { font-size: 11px; padding: 2px 9px; border-radius: 10px; background: #ece6d0; color: var(--ink); }
+  .chip { font-size: 11px; padding: 2px 9px; border-radius: 10px; background: #f2f2f2; color: var(--ink); }
   .halves { display: flex; gap: 12px; font-size: 13px; margin-top: 6px; }
   .halves b { font-family: var(--mincho); font-size: 18px; }
   .sc { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--card); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
   .sc th { background: var(--fairway); color: #fff; font-weight: 500; font-size: 10px; padding: 6px 2px; letter-spacing: .05em; }
   .sc td { text-align: center; padding: 6px 2px; border-bottom: 1px solid var(--line); }
-  .sc tr.sum td { background: #e6eef0; font-weight: 700; }
+  .sc tr.sum td { background: #eef5f1; font-weight: 700; }
   .sc td.h { font-weight: 700; color: var(--fairway); }
   .mk { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-family: var(--mincho); font-weight: 700; font-size: 16px; }
   .mk.bd { border: 2px solid var(--flag); border-radius: 50%; color: var(--flag); }
@@ -151,7 +151,7 @@
   .note-label.issue { color: var(--flag); }
   .note-edit { display: block; width: 100%; resize: none; overflow: hidden; min-height: 70px; color: var(--ink); outline: none; }
   .note-edit:focus { border-color: var(--fairway); }
-  .note-edit::placeholder { color: #b3ada0; }
+  .note-edit::placeholder { color: #c4c4c4; }
   #note-status { text-align: right; min-height: 16px; margin-top: -4px; }
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 12px 0; }
   .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 8px; text-align: center; padding: 7px 2px; }
@@ -189,7 +189,7 @@
   .toast { position: fixed; left: 50%; bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 90px); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity .25s; z-index: 60; pointer-events: none; white-space: nowrap; }
   .toast.on { opacity: .92; }
   /* ピン位置（グリーンを上から見た図。上が奥） */
-  .pin { display: inline-grid; grid-template-columns: repeat(3, 22px); grid-auto-rows: 22px; gap: 2px; padding: 6px 8px; border-radius: 50%; background: radial-gradient(circle, #dcdcbc 58%, #bcbd92); }
+  .pin { display: inline-grid; grid-template-columns: repeat(3, 22px); grid-auto-rows: 22px; gap: 2px; padding: 6px 8px; border-radius: 50%; background: radial-gradient(circle, #e4efe8 58%, #c9dccf); }
   .pin button { border: 0; padding: 0; background: transparent; border-radius: 50%; cursor: pointer; font-size: 10px; color: transparent; font-family: inherit; }
   .pin button.on { background: var(--flag); }
   .pin.lg { grid-template-columns: repeat(3, 64px); grid-auto-rows: 46px; padding: 16px 26px; }
@@ -204,7 +204,7 @@
   .live-holes { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
   .live-holes::-webkit-scrollbar { display: none; }
   .live-holes button { flex: none; width: 31px; height: 31px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font-size: 12px; cursor: pointer; padding: 0; }
-  .live-holes button.done { background: #dde9ec; }
+  .live-holes button.done { background: #e6f0eb; }
   .live-holes button.on { background: var(--fairway); color: #fff; border-color: var(--fairway); }
   .live-head { display: flex; justify-content: space-between; align-items: flex-end; margin: 12px 0; gap: 10px; }
   .live-head h2 { font-size: 32px; }
@@ -212,7 +212,7 @@
   .live-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .live-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .step { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 6px; }
-  .step button { width: 50px; height: 50px; border-radius: 50%; border: none; background: #dde9ec; font-size: 26px; color: var(--fairway); cursor: pointer; }
+  .step button { width: 50px; height: 50px; border-radius: 50%; border: none; background: #e6f0eb; font-size: 26px; color: var(--fairway); cursor: pointer; }
   .step b { font-family: var(--mincho); font-size: 34px; }
   .step.sm { padding: 4px; border-radius: 10px; }
   .step.sm button { width: 30px; height: 30px; font-size: 18px; }
@@ -224,7 +224,7 @@
   /* 押したことが分かるように */
   button, .coin-wrap, .coin-pt, .layout-link, .live-banner { transition: transform .12s ease, filter .12s ease, background-color .15s ease, color .15s ease, box-shadow .12s ease; }
   button:active:not(:disabled), .layout-link:active, .live-banner:active { transform: scale(.95); filter: brightness(.9); }
-  .fab:active { transform: scale(.9); box-shadow: 1px 1px 0 rgba(36,64,76,.16); }
+  .fab:active { transform: scale(.9); box-shadow: 1px 1px 0 rgba(0,0,0,.16); }
   .tabbar button:active .ic { transform: scale(.85); }
   .coin-wrap:active { transform: scale(.94); }
   .coin-pt:active { opacity: .6; }
@@ -244,17 +244,17 @@
   .toast.ok::before { content: "✓ "; }
   /* 練習 */
   .practices { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
-  .pr { display: flex; gap: 12px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; transition: transform .12s ease, filter .12s ease; box-shadow: 3px 3px 0 rgba(46,68,72,.08); }
+  .pr { display: flex; gap: 12px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; transition: transform .12s ease, filter .12s ease; box-shadow: 3px 3px 0 rgba(0,0,0,.08); }
   .pr:active { transform: scale(.97); filter: brightness(.95); }
-  .pr .tee { flex: none; width: 42px; height: 42px; border-radius: 50%; background: #e7efe9; border: 1px solid #2e4448; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 17px; line-height: 1; }
+  .pr .tee { flex: none; width: 42px; height: 42px; border-radius: 50%; background: #eef5f1; border: 1px solid #3d4441; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 17px; line-height: 1; }
   .pr .tee small { font-size: 9px; margin-top: 2px; color: var(--ink-soft); }
   .pr .b { flex: 1; min-width: 0; }
   .pr .t { font-size: 12px; color: var(--ink-soft); }
   .pr .g { font-family: var(--hand); font-size: 14px; line-height: 1.6; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .pr .g.none { color: #b3ada0; }
-  .thumb { flex: none; position: relative; width: 64px; height: 64px; border-radius: 9px; overflow: hidden; background: #e6dfcc; border: 1px solid var(--line); }
+  .pr .g.none { color: #c4c4c4; }
+  .thumb { flex: none; position: relative; width: 64px; height: 64px; border-radius: 9px; overflow: hidden; background: #eeeeee; border: 1px solid var(--line); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .thumb span { position: absolute; right: 3px; bottom: 3px; background: rgba(46,68,72,.75); color: #fff; font-size: 10px; border-radius: 8px; padding: 0 5px; line-height: 16px; }
+  .thumb span { position: absolute; right: 3px; bottom: 3px; background: rgba(0,0,0,.75); color: #fff; font-size: 10px; border-radius: 8px; padding: 0 5px; line-height: 16px; }
   .good-item { display: flex; gap: 12px; align-items: flex-start; }
   .good-item .gb { flex: 1; min-width: 0; }
   .choose { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0 6px; }
@@ -266,9 +266,9 @@
   .good-item .t { font-size: 11px; color: var(--ink-soft); letter-spacing: .05em; }
   .good-item .g { font-family: var(--hand); font-size: 14.5px; line-height: 1.8; white-space: pre-wrap; margin-top: 2px; }
   .phs { display: flex; flex-wrap: wrap; gap: 8px; }
-  .ph { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; background: #e6dfcc; border: 1px solid var(--line); }
+  .ph { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; background: #eeeeee; border: 1px solid var(--line); }
   .ph img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; }
-  .ph button { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(46,68,72,.75); color: #fff; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
+  .ph button { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(0,0,0,.75); color: #fff; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
   .ph.add { display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--fairway); border: 1.5px dashed var(--fairway); background: transparent; cursor: pointer; margin: 0; letter-spacing: 0; font-weight: 400; }
   .photo-view { position: fixed; inset: 0; z-index: 80; background: rgba(20,30,34,.92); display: none; align-items: center; justify-content: center; }
   .photo-view.on { display: flex; }
@@ -278,6 +278,45 @@
   #setup ol { line-height: 2; font-size: 14px; padding-left: 20px; }
   a { color: var(--fairway); }
   .empty { text-align: center; color: var(--ink-soft); padding: 40px 0; font-size: 13px; }
+  /* ===== 新しいデザイン：白いカード・ふんわりした影・セージとサーモン ===== */
+  body { background: #efefef; }
+  body::before, body::after { display: none !important; }
+  h1, h2, h3 { font-family: var(--maru); font-weight: 700; letter-spacing: .02em; }
+  .page-head h2 { font-size: 24px; }
+  .eyebrow { color: #b0b5b3; letter-spacing: .28em; font-weight: 500; }
+  .stat, .trend, .card, .pr, .good-item, .note, .hole, .kpi, .sc, .form input, .form select, .form textarea, .step, .layout-link, .choose button, .btn {
+    border: none !important; box-shadow: 0 8px 24px rgba(0,0,0,.06) !important; }
+  .stat, .trend, .card, .pr, .good-item, .choose button { border-radius: 22px; background: #fff; }
+  .note, .kpi, .hole, .sc { border-radius: 18px; background: #fff; }
+  .form input, .form select, .form textarea { border-radius: 14px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.04) !important; }
+  .stat { padding: 16px 10px 14px; position: relative; }
+  .stat b { font-family: var(--mincho); font-weight: 500; font-size: 28px; color: #3d4441; }
+  .stat.best b { color: #ea9f86; }
+  .stat span { font-weight: 500; letter-spacing: .08em; color: #a9aeac; }
+  .stat::after { content: ""; display: block; width: 22px; height: 3px; border-radius: 2px; margin: 8px auto 0; background: #79a694; }
+  .stat.best::after { background: #ea9f86; }
+  .stat:nth-child(3)::after { background: #9cc3d9; }
+  .sec-title h3 { font-size: 16px; }
+  .month { font-family: var(--maru); font-weight: 700; color: #79a694; border-bottom-color: #e2e2e2; }
+  .fab { background: #f4b097; box-shadow: 0 10px 24px rgba(244,176,151,.55) !important; }
+  .fab:active { box-shadow: 0 4px 12px rgba(244,176,151,.5) !important; }
+  .tabbar { background: rgba(255,255,255,.96); border-top: none; box-shadow: 0 -6px 20px rgba(0,0,0,.05); }
+  .tabbar button.on { color: #79a694; }
+  .coin svg { filter: drop-shadow(0 8px 14px rgba(0,0,0,.08)); }
+  .pr .tee { background: #eef5f1; border: none; }
+  .chip { background: #f2f2f2; border-radius: 12px; }
+  .seg button { border: none; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+  .seg button.on { background: #79a694; color: #fff; box-shadow: 0 4px 12px rgba(121,166,148,.4); }
+  .btn.primary { background: #79a694; box-shadow: 0 8px 20px rgba(121,166,148,.4) !important; }
+  .sc th { background: #79a694; }
+  .sc tr.sum td { background: #f3f7f5; }
+  .sheet { background: #f6f6f6; border-radius: 26px 26px 0 0; }
+  .live-banner { background: #79a694; border-radius: 16px; box-shadow: 0 8px 20px rgba(121,166,148,.35); }
+  .step button { background: #eef5f1; color: #79a694; }
+  /* 練習時間：サーモンのカードに白い棒（参考画像の左のカード） */
+  #pt-chart { background: linear-gradient(160deg, #f8b7a0, #f2a68b); }
+  #pt-chart .trend-legend { color: rgba(255,255,255,.85); }
+
 </style>
 </head>
 <body ontouchstart="">
@@ -334,7 +373,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-09e';
+const APP_VERSION = '2026-11-10a';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -452,14 +491,15 @@ function stats(r) {
   return s;
 }
 // 参考画像（夏の港町のイラスト）からとった、少しくすんだ色
+// セージとサーモンの濃淡（参考：Pinterestのアプリデザイン）
 function coinColor(t) {
-  if (t == null) return '#b6b6ac';
-  if (t < 90) return '#d9a54a';       // 日なたの黄色
-  if (t < 95) return '#d8895a';       // 屋根のテラコッタ
-  if (t < 100) return '#4686a5';      // 空の青
-  if (t < 105) return '#6fb0aa';      // 壁のミントアクア
-  if (t < 110) return '#929371';      // ヤシの葉
-  return '#757145';                   // ヤシの濃いところ
+  if (t == null) return '#d0d0d0';
+  if (t < 90) return '#ea9f86';       // 濃いサーモン
+  if (t < 95) return '#f4b097';       // サーモン
+  if (t < 100) return '#79a694';      // セージ
+  if (t < 105) return '#9dbcaf';      // 薄いセージ
+  if (t < 110) return '#b9c6c0';      // グレーがかったセージ
+  return '#cfd2d0';                   // グレー
 }
 function bestRound() { let b = null; db.rounds.forEach(r => { const t = total(r); if (t != null && (!b || t < total(b))) b = r; }); return b; }
 
@@ -486,7 +526,7 @@ function renderHome() {
 let trendRange = localStorage.getItem('markers-range') || 'all', trendSyncing = false;
 function setRange(v) { trendRange = v; localStorage.setItem('markers-range', v); renderHome(); }
 const SCORE_CHART = { el: '#trend', val: total, guides: [[100, '100'], [90, '90']], color: t => coinColor(t), markers: true, pad: [88, 102], legend: '100・90', tabs: true };
-const PUTTS_CHART = { el: '#trend-putts', val: r => putts(r), guides: [[36, '36']], color: () => '#6fb0aa', markers: false, pad: [34, 38], legend: '36', tabs: false };
+const PUTTS_CHART = { el: '#trend-putts', val: r => putts(r), guides: [[36, '36']], color: () => '#8fb5a5', markers: false, pad: [34, 38], legend: '36', tabs: false };
 function renderTrend(all, best, o = SCORE_CHART) {
   const el = $(o.el);
   if (!all.length) { el.innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
@@ -512,46 +552,46 @@ function renderTrend(all, best, o = SCORE_CHART) {
   const pts = rs.map((r, i) => [x(i), y(ts[i])]);
   const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
   const area = line + ` L${x(n - 1)} ${H - bot} L${x(0)} ${H - bot} Z`;
-  const guide = (t, label) => t > lo && t < hi ? `<line x1="0" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#7d8682" stroke-opacity=".5" stroke-dasharray="4 5" stroke-width="1"/><text x="${W - 4}" y="${y(t) - 4}" font-size="9.5" fill="#7d8682" text-anchor="end">${label}</text>` : '';
-  const avgLine = `<line x1="0" x2="${W}" y1="${y(avg)}" y2="${y(avg)}" stroke="#d8895a" stroke-width="2.2" opacity=".85"/>`;
+  const guide = (t, label) => t > lo && t < hi ? `<line x1="0" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#a2a8a5" stroke-opacity=".5" stroke-dasharray="4 5" stroke-width="1"/><text x="${W - 4}" y="${y(t) - 4}" font-size="9.5" fill="#a2a8a5" text-anchor="end">${label}</text>` : '';
+  const avgLine = `<line x1="0" x2="${W}" y1="${y(avg)}" y2="${y(avg)}" stroke="#f4b097" stroke-width="2.2" opacity=".85"/>`;
   let months = '', prevM = '', lastMX = -99;
   const every = Math.ceil(28 / step);  // 日付は重ならない間隔で
   rs.forEach((r, i) => {
     const m = r.date.slice(0, 7);
-    if (i % every === 0 || i === n - 1) months += `<text x="${x(i)}" y="${H - bot + 17}" font-size="9.5" text-anchor="middle" fill="#7d8682">${md(r.date)}</text>`;
-    if (m !== prevM) { if (x(i) - lastMX >= 30) { months += `<text x="${x(i)}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#4686a5" font-weight="700">${+m.slice(5)}月</text>`; lastMX = x(i); } prevM = m; }
+    if (i % every === 0 || i === n - 1) months += `<text x="${x(i)}" y="${H - bot + 17}" font-size="9.5" text-anchor="middle" fill="#a2a8a5">${md(r.date)}</text>`;
+    if (m !== prevM) { if (x(i) - lastMX >= 30) { months += `<text x="${x(i)}" y="${H - 8}" font-size="11" text-anchor="middle" fill="#79a694" font-weight="700">${+m.slice(5)}月</text>`; lastMX = x(i); } prevM = m; }
   });
   const pt = rs.map((r, i) => {
     const isBest = best && r.id === best.id;
     const fill = o.color(ts[i]);
     const [px, py] = pts[i];
     if (big) return `<g class="coin-pt" onclick="openRound('${r.id}')">
-      <circle cx="${px + 1.6}" cy="${py + 1.6}" r="17" fill="rgba(46,68,72,.16)"/>
-      <circle cx="${px}" cy="${py}" r="17" fill="#f8f3e6" stroke="#2e4448" stroke-width=".9"/>
-      <circle cx="${px}" cy="${py}" r="12.5" fill="${fill}" stroke="#2e4448" stroke-width=".9"/>
-      <text x="${px}" y="${py + 4.5}" font-size="12" font-weight="700" text-anchor="middle" fill="#f8f3e6" font-family="Shippori Mincho, serif">${ts[i]}</text>
-      ${isBest ? `<text x="${px + 14}" y="${py - 11}" font-size="11" fill="#d9a54a">★</text>` : ''}
+      
+      <circle cx="${px}" cy="${py}" r="17" fill="#ffffff" style="filter:drop-shadow(0 3px 6px rgba(0,0,0,.08))"/>
+      <circle cx="${px}" cy="${py}" r="12.5" fill="${fill}"/>
+      <text x="${px}" y="${py + 4.5}" font-size="12" font-weight="700" text-anchor="middle" fill="#ffffff" font-family="DM Sans, sans-serif">${ts[i]}</text>
+      ${isBest ? `<text x="${px + 14}" y="${py - 11}" font-size="11" fill="#f2c46d">★</text>` : ''}
     </g>`;
     // 山は数字を上、谷は下に出して重なりを避ける
     const nb = [ts[i - 1], ts[i + 1]].filter(v => v != null);
     const up = !nb.length || ts[i] >= sum(nb) / nb.length;
     return `<g class="coin-pt" onclick="openRound('${r.id}')">
       <circle cx="${px}" cy="${py}" r="11" fill="transparent"/>
-      <circle cx="${px}" cy="${py}" r="5.5" fill="${fill}" stroke="#f8f3e6" stroke-width="1.6"/>
-      <text x="${px}" y="${up ? py - 9 : py + 17}" font-size="10" font-weight="700" text-anchor="middle" fill="${isBest && o.markers ? '#c08a2c' : '#2e4448'}" font-family="Shippori Mincho, serif">${isBest && o.markers ? '★' : ''}${ts[i]}</text>
+      <circle cx="${px}" cy="${py}" r="5.5" fill="${fill}" stroke="#ffffff" stroke-width="1.6"/>
+      <text x="${px}" y="${up ? py - 9 : py + 17}" font-size="10" font-weight="700" text-anchor="middle" fill="${isBest && o.markers ? '#e0a640' : '#3d4441'}" font-family="DM Sans, sans-serif">${isBest && o.markers ? '★' : ''}${ts[i]}</text>
     </g>`;
   }).join('');
   const chip = (v, l) => `<button class="${trendRange === v ? 'on' : ''}" onclick="setRange('${v}')">${l}</button>`;
   el.innerHTML = `${o.tabs ? `<div class="trend-tabs seg sm">${chip('10', '直近10回')}${chip('year', '今年')}${chip('all', '全部')}<span class="muted" style="margin-left:auto">${n}回</span></div>` : ''}
     <div class="trend-scroll"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-      <defs><linearGradient id="fw${o.tabs ? '' : 'p'}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8dc3bc" stop-opacity=".55"/><stop offset="1" stop-color="#8dc3bc" stop-opacity=".05"/></linearGradient></defs>
+      <defs><linearGradient id="fw${o.tabs ? '' : 'p'}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd3c9" stop-opacity=".55"/><stop offset="1" stop-color="#bcd3c9" stop-opacity=".05"/></linearGradient></defs>
       ${o.guides.map(g => guide(...g)).join('')}
       <path d="${area}" fill="url(#fw${o.tabs ? '' : 'p'})"/>
       ${avgLine}
-      <path d="${line}" fill="none" stroke="#4686a5" stroke-width="${big ? 2 : 1.6}" stroke-linejoin="round"/>
+      <path d="${line}" fill="none" stroke="#79a694" stroke-width="${big ? 2 : 1.6}" stroke-linejoin="round"/>
       ${months}${pt}
     </svg></div>
-    <div class="trend-legend"><span>● ${o.tabs ? 'スコア' : 'パット'}（下ほど少ない）</span><span style="color:#c8693f">━ 平均 <b>${avg.toFixed(1)}</b></span><span><i></i>${o.legend}</span></div>`;
+    <div class="trend-legend"><span>● ${o.tabs ? 'スコア' : 'パット'}（下ほど少ない）</span><span style="color:#e08f73">━ 平均 <b>${avg.toFixed(1)}</b></span><span><i></i>${o.legend}</span></div>`;
   const sc = el.querySelector('.trend-scroll'); sc.scrollLeft = sc.scrollWidth;
   sc.addEventListener('scroll', () => { if (trendSyncing) return; trendSyncing = true; document.querySelectorAll('#trend .trend-scroll, #trend-putts .trend-scroll').forEach(o => { if (o !== sc) o.scrollLeft = sc.scrollLeft; }); requestAnimationFrame(() => { trendSyncing = false; }); }, { passive: true });
 }
@@ -560,28 +600,28 @@ function coinHTML(r, best, big) {
   const t = total(r), c = coinColor(t), isBest = best && best.id === r.id;
   const id = 'cp' + r.id.replace(/\W/g, '') + (big ? 'b' : 's');
   const name = shortCourse(r.course).slice(0, 11);
-  const ink = '#2e4448', cream = '#f8f3e6';
+  const ink = '#3d4441', cream = '#ffffff';
   return `<div class="coin"><svg viewBox="0 0 100 100" aria-label="${t ?? ''}">
     <defs>
       <path id="${id}t" d="M 13 50 A 37 37 0 0 1 87 50"/>
       <path id="${id}b" d="M 9 50 A 41 41 0 0 0 91 50"/>
       <clipPath id="${id}c"><circle cx="50" cy="50" r="29"/></clipPath>
     </defs>
-    <circle cx="52.5" cy="52.5" r="47" fill="rgba(46,68,72,.16)"/>
-    <circle cx="50" cy="50" r="47" fill="${cream}" stroke="${ink}" stroke-width="1"/>
-    <circle cx="50" cy="50" r="43.5" fill="none" stroke="${ink}" stroke-width=".5" stroke-dasharray="1 2.2" opacity=".55"/>
-    <text font-size="8" fill="${ink}" letter-spacing=".6" font-family="Zen Maru Gothic, sans-serif" font-weight="700"><textPath href="#${id}t" startOffset="50%" text-anchor="middle">${esc(name)}</textPath></text>
-    <text font-size="7" fill="${ink}" letter-spacing="1.2" font-family="Zen Maru Gothic, sans-serif" opacity=".75"><textPath href="#${id}b" startOffset="50%" text-anchor="middle">${r.date.replace(/-/g, '.')}</textPath></text>
-    <text x="10.5" y="52.6" font-size="6" fill="${isBest ? '#d9a54a' : ink}" text-anchor="middle">${isBest ? '★' : '·'}</text>
-    <text x="89.5" y="52.6" font-size="6" fill="${isBest ? '#d9a54a' : ink}" text-anchor="middle">${isBest ? '★' : '·'}</text>
+    
+    <circle cx="50" cy="50" r="47" fill="#fff"/>
+    <circle cx="50" cy="50" r="43.5" fill="none" stroke="${ink}" stroke-width=".5" stroke-dasharray="1 2.2" opacity=".25"/>
+    <text font-size="8" fill="${ink}" letter-spacing=".6" font-family="Zen Kaku Gothic New, sans-serif" font-weight="700"><textPath href="#${id}t" startOffset="50%" text-anchor="middle">${esc(name)}</textPath></text>
+    <text font-size="7" fill="${ink}" letter-spacing="1.2" font-family="Zen Kaku Gothic New, sans-serif" opacity=".75"><textPath href="#${id}b" startOffset="50%" text-anchor="middle">${r.date.replace(/-/g, '.')}</textPath></text>
+    <text x="10.5" y="52.6" font-size="6" fill="${isBest ? '#f2c46d' : ink}" text-anchor="middle">${isBest ? '★' : '·'}</text>
+    <text x="89.5" y="52.6" font-size="6" fill="${isBest ? '#f2c46d' : ink}" text-anchor="middle">${isBest ? '★' : '·'}</text>
     <g clip-path="url(#${id}c)">
       <rect x="0" y="0" width="100" height="100" fill="${c}"/>
       <g fill="${cream}" opacity=".9"><circle cx="35" cy="33" r="5"/><circle cx="41" cy="30" r="6.5"/><circle cx="47" cy="33" r="4.5"/><rect x="31" y="33" width="20" height="4.5" rx="2.2"/></g>
       <path d="M 18 66 Q 26 62 34 66 T 50 66 T 66 66 T 82 66 V 90 H 18 Z" fill="${ink}" opacity=".22"/>
       <path d="M 18 72 Q 26 68 34 72 T 50 72 T 66 72 T 82 72 V 90 H 18 Z" fill="${ink}" opacity=".18"/>
     </g>
-    <circle cx="50" cy="50" r="29" fill="none" stroke="${ink}" stroke-width="1"/>
-    <text x="50" y="59" font-size="${String(t ?? '').length > 2 ? 22 : 25}" font-weight="700" fill="${cream}" text-anchor="middle" font-family="Shippori Mincho, serif">${t ?? '–'}</text>
+    
+    <text x="50" y="59" font-size="${String(t ?? '').length > 2 ? 22 : 25}" font-weight="700" fill="${cream}" text-anchor="middle" font-family="DM Sans, sans-serif">${t ?? '–'}</text>
   </svg></div>`;
 }
 function renderCoins(best) {
@@ -644,7 +684,7 @@ function openRound(id) {
     s.detail && `<div class="kpi"><b>${s.ob}</b><span>OB</span></div>`,
     s.detail && `<div class="kpi"><b>${s.bunker}・${s.pen}</b><span>バンカー・ペナ</span></div>`,
   ].filter(Boolean).join('');
-  const D = s.dist, DC = { bd: ['バーディ以下', 'var(--flag)'], par: ['パー', 'var(--fairway)'], bg: ['ボギー', '#7fb3cc'], db: ['ダボ', 'var(--sand-deep)'], tp: ['トリプル以上', '#7a4a30'] };
+  const D = s.dist, DC = { bd: ['バーディ以下', 'var(--flag)'], par: ['パー', 'var(--fairway)'], bg: ['ボギー', '#7fb3cc'], db: ['ダボ', 'var(--sand-deep)'], tp: ['トリプル以上', '#c97c63'] };
   const dist = D ? `<div class="note-label">スコアの内訳</div>
     <div class="dist">${Object.keys(DC).filter(k => D[k]).map(k => `<div style="flex:${D[k]};background:${DC[k][1]}">${D[k]}</div>`).join('')}</div>
     <div class="dist-legend">${Object.keys(DC).map(k => `<span><i style="background:${DC[k][1]}"></i>${DC[k][0]} ${D[k]}</span>`).join('')}</div>` : '';
@@ -738,13 +778,13 @@ function renderPracticeChart() {
   const max = Math.max(4, ...hours), ticks = niceTicks(0, max), hi = ticks.at(-1);
   const y0 = H - bot, yv = v => y0 - v / hi * (y0 - top);
   const x = i => W - padR - (months.length - i - 0.5) * step;  // 右端が今月
-  const grid = ticks.map(t => `<line x1="0" x2="${W}" y1="${yv(t)}" y2="${yv(t)}" stroke="#ded6c0" ${t ? 'stroke-dasharray="3 4"' : ''}/><text x="${W - 4}" y="${yv(t) - 3}" font-size="9" fill="#9aa19c" text-anchor="end">${t ? t + 'h' : ''}</text>`).join('');
+  const grid = ticks.map(t => `<line x1="0" x2="${W}" y1="${yv(t)}" y2="${yv(t)}" stroke="#fff" stroke-opacity=".45" ${t ? 'stroke-dasharray="3 4"' : ''}/><text x="${W - 4}" y="${yv(t) - 3}" font-size="9" fill="#fff" fill-opacity=".8" text-anchor="end">${t ? t + 'h' : ''}</text>`).join('');
   const bars = months.map((k, i) => {
     const h = hours[i], bx = x(i) - 14;
-    return `${h ? `<rect x="${bx}" y="${yv(h)}" width="28" height="${y0 - yv(h)}" rx="5" fill="${k === now ? '#d8895a' : '#8dc3bc'}" stroke="#2e4448" stroke-width=".8"/>
-      <text x="${x(i)}" y="${yv(h) - 5}" font-size="10.5" font-weight="700" fill="#2e4448" text-anchor="middle" font-family="Shippori Mincho, serif">${+h.toFixed(1)}</text>` : ''}
-      <text x="${x(i)}" y="${y0 + 15}" font-size="10" fill="${k === now ? '#c8693f' : '#4686a5'}" text-anchor="middle" font-weight="700">${+k.slice(5)}月</text>
-      ${rounds[i] ? `<text x="${x(i)}" y="${y0 + 31}" font-size="9.5" fill="#7d8682" text-anchor="middle">⛳${rounds[i]}</text>` : ''}`;
+    return `${h ? `<rect x="${bx}" y="${yv(h)}" width="28" height="${y0 - yv(h)}" rx="5" fill="#fff" opacity="${k === now ? 1 : .6}" />
+      <text x="${x(i)}" y="${yv(h) - 5}" font-size="11" font-weight="700" fill="#fff" text-anchor="middle" font-family="DM Sans, sans-serif">${+h.toFixed(1)}</text>` : ''}
+      <text x="${x(i)}" y="${y0 + 15}" font-size="10" fill="#fff" opacity="${k === now ? 1 : .8}" text-anchor="middle" font-weight="700">${+k.slice(5)}月</text>
+      ${rounds[i] ? `<text x="${x(i)}" y="${y0 + 31}" font-size="9.5" fill="#fff" opacity=".85" text-anchor="middle">⛳${rounds[i]}</text>` : ''}`;
   }).join('');
   el.innerHTML = `<div class="trend-scroll"><svg width="${W}" height="${H}">${grid}${bars}</svg></div>
     <div class="trend-legend"><span>月ごとの練習時間（時間）</span><span>⛳ ラウンド数</span></div>`;
@@ -854,7 +894,7 @@ async function savePractice(btn) {
 function openPractice(id) {
   const p = db.practices.find(x => x.id === id); if (!p) return;
   openSheet(`<div class="detail-head" style="align-items:center">
-      <div class="tee" style="width:64px;height:64px;border-radius:50%;background:#e7efe9;border:1px solid #2e4448;display:flex;align-items:center;justify-content:center;font-size:30px;flex:none">${prIcon()}</div>
+      <div class="tee" style="width:64px;height:64px;border-radius:50%;background:#eef5f1;border:1px solid #3d4441;display:flex;align-items:center;justify-content:center;font-size:30px;flex:none">${prIcon()}</div>
       <div><div class="muted">${p.date.replace(/-/g, '/')}</div><h3>練習${p.place ? `<span style="font-size:14px"> ・ ${esc(p.place)}</span>` : ''}</h3>
       <div class="chips">${p.minutes ? `<span class="chip">${minLabel(p.minutes)}</span>` : ''}</div></div></div>
     <div class="note-label">よかったこと</div>
@@ -1146,7 +1186,7 @@ function niceTicks(lo, hi) {
   const t = []; for (let v = a; v <= b + 1e-9; v += step) t.push(v);
   return t;
 }
-function miniChart(vals, { lowerBetter = true, color = '#4686a5', fmt = v => v, unit = '', dates = [] } = {}) {
+function miniChart(vals, { lowerBetter = true, color = '#79a694', fmt = v => v, unit = '', dates = [] } = {}) {
   const pts = vals.map((v, i) => [i, v]).filter(p => p[1] != null);
   if (pts.length < 2) return '<div class="muted" style="padding:10px 0">記録が2回分たまると線が出ます</div>';
   const AX = 38, H = 150, padL = 10, padR = 12, top = 10, bot = 26, step = 26;
@@ -1157,11 +1197,11 @@ function miniChart(vals, { lowerBetter = true, color = '#4686a5', fmt = v => v, 
   const y = v => top + (hi - v) / (hi - lo) * (H - top - bot);  // どのグラフも、数が少ないほど下
   const d = pts.map((p, k) => (k ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
   const last = pts[pts.length - 1];
-  const axis = ticks.map(t => `<text x="${AX - 6}" y="${y(t) + 3.5}" font-size="10" fill="#7d8682" text-anchor="end">${fmt(t)}${unit}</text>`).join('');
-  const grid = ticks.map(t => `<line x1="0" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#ded6c0" stroke-width="1" ${t === lo ? '' : 'stroke-dasharray="3 4"'}/>`).join('');
+  const axis = ticks.map(t => `<text x="${AX - 6}" y="${y(t) + 3.5}" font-size="10" fill="#a2a8a5" text-anchor="end">${fmt(t)}${unit}</text>`).join('');
+  const grid = ticks.map(t => `<line x1="0" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#e7e7e7" stroke-width="1" ${t === lo ? '' : 'stroke-dasharray="3 4"'}/>`).join('');
   let months = '', prev = '', lastX = -99;
-  dates.forEach((dt, i) => { const m = dt.slice(0, 7); if (m !== prev) { if (x(i) - lastX >= 26) { months += `<text x="${x(i)}" y="${H - 8}" font-size="10" fill="#4686a5" text-anchor="middle">${+m.slice(5)}月</text>`; lastX = x(i); } prev = m; } });
-  const labels = pts.map(p => `<text x="${x(p[0])}" y="${y(p[1]) - 7}" font-size="9" fill="#7d8682" text-anchor="middle">${fmt(p[1])}</text>`).join('');
+  dates.forEach((dt, i) => { const m = dt.slice(0, 7); if (m !== prev) { if (x(i) - lastX >= 26) { months += `<text x="${x(i)}" y="${H - 8}" font-size="10" fill="#79a694" text-anchor="middle">${+m.slice(5)}月</text>`; lastX = x(i); } prev = m; } });
+  const labels = pts.map(p => `<text x="${x(p[0])}" y="${y(p[1]) - 7}" font-size="9" fill="#a2a8a5" text-anchor="middle">${fmt(p[1])}</text>`).join('');
   return `<div class="mini-wrap"><svg class="mini-axis" width="${AX}" height="${H}">${axis}</svg>
     <div class="mini-scroll"><svg width="${W}" height="${H}">
       ${grid}${months}
@@ -1188,16 +1228,16 @@ function renderTendency() {
   // パー3・4・5ごとの平均オーバー
   const by = { 3: [], 4: [], 5: [] };
   rs.forEach(r => { if (hasPar(r)) r.holes.forEach(h => by[h.par]?.push(h.score - h.par)); });
-  const parRows = [3, 4, 5].filter(p => by[p].length).map(p => { const a = sum(by[p]) / by[p].length; return `<div class="bar"><span>パー${p}</span><div class="track"><div class="fill" style="width:${Math.min(100, a / 3 * 100)}%;background:${['', '', '', '#8fb9cc', '#4686a5', '#d8895a'][p]}"></div></div><b>+${a.toFixed(2)}</b></div>`; }).join('');
+  const parRows = [3, 4, 5].filter(p => by[p].length).map(p => { const a = sum(by[p]) / by[p].length; return `<div class="bar"><span>パー${p}</span><div class="track"><div class="fill" style="width:${Math.min(100, a / 3 * 100)}%;background:${['', '', '', '#9cc3d9', '#79a694', '#f4b097'][p]}"></div></div><b>+${a.toFixed(2)}</b></div>`; }).join('');
   // コースごと
   const cs = {};
   rs.forEach(r => { const k = shortCourse(r.course); (cs[k] ||= []).push(total(r)); });
   const courseRows = Object.entries(cs).sort((a, b) => b[1].length - a[1].length || Math.min(...a[1]) - Math.min(...b[1]))
     .map(([c, v]) => `<tr><td>${esc(c)}</td><td class="muted" style="text-align:right">${v.length}回</td><td class="n">${Math.min(...v)}</td></tr>`).join('');
   $('#tendency').innerHTML =
-    (ST.some(s => s.fw) ? card('FWキープ率', ST.map(s => pctv(s.fw)), { lowerBetter: false, color: '#757145' }, '%') : '') +
-    (ST.some(s => s.gir != null) ? card('パーオン', ST.map(s => s.gir ?? null), { lowerBetter: false, color: '#cf6f45' }, '回') : '') +
-    (ST.some(s => s.dist) ? card('トリプル以上のホール', ST.map(s => s.dist ? s.dist.tp : null), { color: '#d8895a' }, '回') : '') +
+    (ST.some(s => s.fw) ? card('FWキープ率', ST.map(s => pctv(s.fw)), { lowerBetter: false, color: '#c4c7c5' }, '%') : '') +
+    (ST.some(s => s.gir != null) ? card('パーオン', ST.map(s => s.gir ?? null), { lowerBetter: false, color: '#ea9f86' }, '回') : '') +
+    (ST.some(s => s.dist) ? card('トリプル以上のホール', ST.map(s => s.dist ? s.dist.tp : null), { color: '#f4b097' }, '回') : '') +
     (parRows ? `<div class="card"><h4>パーごとの平均（パーより何打多いか）</h4><div class="bars">${parRows}</div><p class="muted" style="margin:8px 0 0">パーが入っているラウンドだけで計算しています</p></div>` : '') +
     `<div class="card"><h4>コースごと</h4><table class="courses"><tr class="muted"><td>コース</td><td style="text-align:right">回数</td><td class="n" style="font-family:var(--maru);font-weight:400">ベスト</td></tr>${courseRows}</table></div>`;
   const sc = [...document.querySelectorAll('#tendency .mini-scroll')];
