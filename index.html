@@ -317,6 +317,11 @@
   .live-banner { background: #79a694; border-radius: 16px; box-shadow: 0 8px 20px rgba(121,166,148,.35); }
   .step button { background: #eef5f1; color: #79a694; }
   /* 練習時間：サーモンのカードに白い棒（参考画像の左のカード） */
+  .tabbar button .ic { filter: none !important; opacity: 1 !important; color: #b8bcba; display: block; height: 22px; }
+  .tabbar button.on .ic { color: #79a694; }
+  #gear-btn { opacity: 1; color: #a2a8a5; display: flex; }
+  .choose button .sticker { margin-bottom: 2px; }
+  .trend-legend .sticker { display: inline-block; vertical-align: -3px; margin-right: 3px; }
   #pt-chart { background: linear-gradient(160deg, #f8b7a0, #f2a68b); }
   #pt-chart .trend-legend { color: rgba(255,255,255,.85); }
 
@@ -330,7 +335,7 @@
     <div class="wrap">
       <div class="page-head">
         <div><div class="eyebrow">BALL MARKERS</div><h2>ゴルフの記録</h2></div>
-        <button class="icon-btn" onclick="openSettings()" aria-label="設定">⚙️</button>
+        <button class="icon-btn" onclick="openSettings()" aria-label="設定" id="gear-btn"></button>
       </div>
       <div id="live-banner"></div>
       <div class="stats" id="stats"></div>
@@ -363,9 +368,9 @@
 
   <button class="fab" onclick="openAdd()" aria-label="記録する">＋</button>
   <nav class="tabbar">
-    <button class="on" data-v="home" onclick="tab('home')"><span class="ic">⛳</span>記録</button>
-    <button data-v="good" onclick="tab('good')"><span class="ic">🌱</span>よかったこと</button>
-    <button data-v="trend" onclick="tab('trend')"><span class="ic">📈</span>傾向</button>
+    <button class="on" data-v="home" onclick="tab('home')"><span class="ic" data-icon="flag"></span>記録</button>
+    <button data-v="good" onclick="tab('good')"><span class="ic" data-icon="sprout"></span>よかったこと</button>
+    <button data-v="trend" onclick="tab('trend')"><span class="ic" data-icon="chart"></span>傾向</button>
   </nav>
 </div>
 
@@ -384,7 +389,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-10b';
+const APP_VERSION = '2026-11-10c';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -527,7 +532,7 @@ function renderHome() {
     <div class="stat"><b>${avg5}</b><span>直近5回の平均</span></div>
     <div class="stat"><b>${avgP}</b><span>直近5回のパット</span></div>`;
   const live = liveState();
-  $('#live-banner').innerHTML = live ? `<button class="live-banner" onclick="resumeLive()">⛳ ラウンド中：${esc(shortCourse(live.draft.course))}　${live.idx + 1}番ホールから続ける</button>` : '';
+  $('#live-banner').innerHTML = live ? `<button class="live-banner" onclick="resumeLive()">ラウンド中：${esc(shortCourse(live.draft.course))}　${live.idx + 1}番ホールから続ける</button>` : '';
   renderPracticeChart();
   renderCoins(best);
   $('#count').textContent = `${db.rounds.length}ラウンド`;
@@ -674,7 +679,7 @@ function scorecard(r, from, to, label) {
     <td>${mark(h)}</td>
     <td>${h.putts ?? ''}</td>
     ${det ? `<td>${esc(h.club || '')}</td><td>${dirHTML(h)}</td><td class="sub">${[h.ob ? 'OB' + (h.ob > 1 ? h.ob : '') : '', h.bunker ? 'バンカー' + (h.bunker > 1 ? h.bunker : '') : '', h.pen ? 'ペナ' + (h.pen > 1 ? h.pen : '') : ''].filter(Boolean).join(' ')}</td>` : ''}
-  </tr>${h.memo || h.pin ? `<tr class="memo"><td></td><td colspan="${cols}">${h.pin ? `<span class="chip">📍 ${esc(h.pin)}</span> ` : ''}${esc(h.memo || '')}</td></tr>` : ''}`).join('');
+  </tr>${h.memo || h.pin ? `<tr class="memo"><td></td><td colspan="${cols}">${h.pin ? `<span class="chip">ピン ${esc(h.pin)}</span> ` : ''}${esc(h.memo || '')}</td></tr>` : ''}`).join('');
   const s = scoreOf(r.holes, from, to), p = H.every(h => h.putts != null) ? sum(H.map(h => h.putts)) : '';
   const ps = par ? sum(H.map(h => h.par)) : null;
   return `<table class="sc"><tr><th style="${label.length > 3 ? 'font-size:9px' : ''}">${esc(label)}</th>${par ? '<th>PAR</th>' : ''}<th>スコア</th><th>パット</th>${det ? '<th>1打目</th><th>方向</th><th>そのほか</th>' : ''}</tr>${rows}
@@ -788,6 +793,18 @@ const STICKERS = [
   // きのこ
   `<rect x="24" y="30" width="16" height="22" rx="7" fill="#fff2dd"/><circle cx="29" cy="40" r="1.6" fill="#3d4441"/><circle cx="35" cy="40" r="1.6" fill="#3d4441"/><path d="M30 44 Q32 46 34 44" stroke="#3d4441" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M10 33 Q10 11 32 11 Q54 11 54 33 Z" fill="#ef7b6c"/><circle cx="22" cy="22" r="3.6" fill="#fff"/><circle cx="36" cy="18" r="3" fill="#fff"/><circle cx="44" cy="27" r="2.6" fill="#fff"/><circle cx="29" cy="29" r="2" fill="#fff"/>`,
 ];
+// ラウンドのシール（旗）
+const FLAG_ART = `<ellipse cx="32" cy="54" rx="19" ry="5.5" fill="#8cc58a"/><circle cx="42" cy="51.5" r="3.4" fill="#fff"/><path d="M25 54 V11" stroke="#6d7a75" stroke-width="3.2" stroke-linecap="round"/><path d="M26.5 12 L49 19.5 L26.5 28 Z" fill="#f08a7e"/>`;
+const stickerArt = (art, size, rot = 0) => `<svg class="sticker" width="${size}" height="${size}" viewBox="0 0 64 64" style="transform:rotate(${rot}deg)"><g filter="url(#stk)">${art}</g></svg>`;
+// SVGの中に置くシール（グラフ用）
+const stickerIn = (art, x, y, size) => `<svg x="${x - size / 2}" y="${y - size / 2}" width="${size}" height="${size}" viewBox="0 0 64 64" overflow="visible"><g filter="url(#stk)">${art}</g></svg>`;
+const ICONS = {
+  flag: '<path d="M6 21V4"/><path d="M6 4l11 3.5L6 11"/><path d="M3 21h8"/>',
+  sprout: '<path d="M12 21v-8"/><path d="M12 13c0-4-3-6-7-6 0 4 3 6 7 6z"/><path d="M12 11c0-3.5 2.5-6 6.5-6 0 3.5-2.5 6-6.5 6z"/>',
+  chart: '<path d="M4 20h16"/><path d="M5 16l4-5 4 3 6-8"/>',
+  gear: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+};
+const icon = (n, size = 22) => `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
 function hashStr(t) { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 function sticker(id, size = 46) {
   const h = hashStr(id || ''), art = STICKERS[h % STICKERS.length], rot = (h >> 8) % 25 - 12;
@@ -823,17 +840,17 @@ function renderPracticeChart() {
     return `${h ? `<rect x="${bx}" y="${yv(h)}" width="28" height="${y0 - yv(h)}" rx="5" fill="#fff" opacity="${k === now ? 1 : .6}" />
       <text x="${x(i)}" y="${yv(h) - 5}" font-size="11" font-weight="700" fill="#fff" text-anchor="middle" font-family="DM Sans, sans-serif">${+h.toFixed(1)}</text>` : ''}
       <text x="${x(i)}" y="${y0 + 15}" font-size="10" fill="#fff" opacity="${k === now ? 1 : .8}" text-anchor="middle" font-weight="700">${+k.slice(5)}月</text>
-      ${rounds[i] ? `<text x="${x(i)}" y="${y0 + 31}" font-size="9.5" fill="#fff" opacity=".85" text-anchor="middle">⛳${rounds[i]}</text>` : ''}`;
+      ${rounds[i] ? `${stickerIn(FLAG_ART, x(i) - 7, y0 + 27, 19)}<text x="${x(i) + 4}" y="${y0 + 32}" font-size="10.5" font-weight="700" fill="#fff">${rounds[i]}</text>` : ''}`;
   }).join('');
   el.innerHTML = `<div class="trend-scroll"><svg width="${W}" height="${H}">${grid}${bars}</svg></div>
-    <div class="trend-legend"><span>月ごとの練習時間（時間）</span><span>⛳ ラウンド数</span></div>`;
+    <div class="trend-legend"><span>月ごとの練習時間（時間）</span><span>${stickerArt(FLAG_ART, 15)}ラウンド数</span></div>`;
   const sc = el.querySelector('.trend-scroll'); sc.scrollLeft = sc.scrollWidth;
 }
 function openAdd() {
   const live = liveState();
   openSheet(`<h3>何を記録しますか？</h3>
-    ${live ? `<button class="live-banner" onclick="resumeLive()">⛳ ラウンド中の続き：${esc(shortCourse(live.draft.course))} ${live.idx + 1}番から</button>` : ''}
-    <div class="choose"><button onclick="openPracticeEdit()"><span>🏌️</span>練習</button><button onclick="openEdit()"><span>⛳</span>ラウンド</button></div>`);
+    ${live ? `<button class="live-banner" onclick="resumeLive()">ラウンド中の続き：${esc(shortCourse(live.draft.course))} ${live.idx + 1}番から</button>` : ''}
+    <div class="choose"><button onclick="openPracticeEdit()">${stickerArt(STICKERS[1], 56, -8)}練習</button><button onclick="openEdit()">${stickerArt(FLAG_ART, 56, 6)}ラウンド</button></div>`);
 }
 let pdraft = null;
 function openPracticeEdit(id) {
@@ -969,9 +986,9 @@ async function delPractice(id) {
 function renderGoods() {
   const items = [
     ...db.practices.filter(p => p.good).map(p => ({ date: p.date, label: `練習${p.place ? '・' + p.place : ''}`, st: p.id, g: p.good, open: `openPractice('${p.id}')`, ph: (p.photos || [])[0] })),
-    ...db.rounds.filter(r => r.good).map(r => ({ date: r.date, label: `⛳ ${shortCourse(r.course)}（${total(r) ?? '–'}）`, g: r.good, open: `openRound('${r.id}')` })),
+    ...db.rounds.filter(r => r.good).map(r => ({ date: r.date, label: `${shortCourse(r.course)}（${total(r) ?? '–'}）`, flag: true, g: r.good, open: `openRound('${r.id}')` })),
   ].sort((a, b) => b.date.localeCompare(a.date));
-  $('#goods').innerHTML = items.length ? items.map(x => `<div class="good-item" onclick="${x.open}"><div class="gb"><div class="t">${x.st ? sticker(x.st, 22) : ''}${x.date.replace(/-/g, '/')}　${esc(x.label)}</div><div class="g">${esc(x.g)}</div></div>${x.ph ? `<div class="thumb"><img data-thumb="${esc(x.ph)}" alt=""></div>` : ''}</div>`).join('')
+  $('#goods').innerHTML = items.length ? items.map(x => `<div class="good-item" onclick="${x.open}"><div class="gb"><div class="t">${x.st ? sticker(x.st, 22) : x.flag ? stickerArt(FLAG_ART, 22) : ''}${x.date.replace(/-/g, '/')}　${esc(x.label)}</div><div class="g">${esc(x.g)}</div></div>${x.ph ? `<div class="thumb"><img data-thumb="${esc(x.ph)}" alt=""></div>` : ''}</div>`).join('')
     : '<div class="empty">練習やラウンドの「よかったこと」がここにたまります</div>';
   loadThumbs();
 }
@@ -1038,7 +1055,7 @@ function renderEdit() {
   const courses = [...new Set([...db.courses.map(c => c.name), ...db.rounds.map(r => r.course)])];
   openSheet(`<h3 style="margin-bottom:4px">${d.id ? 'ラウンドを書き直す' : 'ラウンドを記録'}</h3>
     <p class="muted">スコアカードのスクショをClaudeに送れば、代わりに入れることもできます。</p>
-    <button class="live-banner" onclick="startLive()">⛳ 回りながら記録する（1ホールずつ）</button>
+    <button class="live-banner" onclick="startLive()">回りながら記録する（1ホールずつ）</button>
     <div class="form">
       <div class="two">
         <div><label>日付</label><input type="date" value="${d.date}" onchange="draft.date=this.value"></div>
@@ -1140,7 +1157,7 @@ async function syncLiveFromRemote() {
 function updateLiveStatus() {
   const el = document.getElementById('live-status'); if (!el) return;
   const t = liveSyncedAt && liveSyncedHash === localStorage.getItem(LIVE_KEY);
-  el.innerHTML = `📱 この端末に保存済み　${t ? `☁️ ${liveSyncedAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} クラウドにも保存` : liveSyncing ? '☁️ クラウドに送信中…' : '☁️ 電波があるときにクラウドにも保存します'}`;
+  el.innerHTML = `この端末に保存済み　${t ? `${liveSyncedAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} クラウドにも保存` : liveSyncing ? 'クラウドに送信中…' : '電波があるときにクラウドにも保存します'}`;
 }
 window.addEventListener('online', () => { pushLive(); flushPendingNotes(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pushLive(); });
@@ -1306,6 +1323,8 @@ function closeSheet() { $('#sheet').classList.remove('on'); $('#sheet-bg').class
 
 /* ================= 起動 ================= */
 function renderAll() { renderHome(); renderTendency(); renderGoods(); }
+document.querySelectorAll('[data-icon]').forEach(e => { e.innerHTML = icon(e.dataset.icon); });
+$('#gear-btn').innerHTML = icon('gear', 24);
 function setupHTML(inSheet) {
   return `${inSheet ? '' : '<div class="page-head"><div><div class="eyebrow">BALL MARKERS</div><h2>Markers</h2></div></div>'}
   ${cfg.token && !inSheet ? `<p style="line-height:1.8;background:var(--card);border:1px solid var(--flag);border-radius:8px;padding:10px 12px">今のGitHubのキー（Stubsと共通）には、まだ <code>markers-data</code> を使う権限がありません。<br>
@@ -1318,7 +1337,7 @@ function setupHTML(inSheet) {
     <li>Permissions →「Contents」を <b>Read and write</b> に</li>
     <li>一番下の「Generate token」→ 出てきた <code>github_pat_…</code> をコピー</li>
   </ol>
-  <p class="muted" style="line-height:1.8;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px">💡 Claudeアプリなどの中のリンクから開くと、閉じるたびにキーが消えます。<b>Safariで開くか、ホーム画面のMarkersのアイコン</b>から開いてください。「パスワードを保存」と出たら保存しておくと、次からは顔認証で入ります。</p>
+  <p class="muted" style="line-height:1.8;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px">Claudeアプリなどの中のリンクから開くと、閉じるたびにキーが消えます。<b>Safariで開くか、ホーム画面のMarkersのアイコン</b>から開いてください。「パスワードを保存」と出たら保存しておくと、次からは顔認証で入ります。</p>
   <form class="form" onsubmit="event.preventDefault();saveSettings()" action="#">
     <input type="text" name="username" autocomplete="username" value="Markers" readonly style="position:absolute;opacity:0;height:0;width:0;pointer-events:none" tabindex="-1">
     <label>GitHubのキー</label><input id="st-token" name="password" type="password" value="${esc(cfg.token || '')}" placeholder="github_pat_…" autocomplete="current-password">
