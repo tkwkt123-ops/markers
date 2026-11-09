@@ -282,15 +282,14 @@
   <section class="view on" id="v-home">
     <div class="wrap">
       <div class="page-head">
-        <div><div class="eyebrow">BALL MARKERS</div><h2>スコアの推移</h2></div>
+        <div><div class="eyebrow">BALL MARKERS</div><h2>ゴルフの記録</h2></div>
         <button class="icon-btn" onclick="openSettings()" aria-label="設定">⚙️</button>
       </div>
       <div id="live-banner"></div>
       <div class="stats" id="stats"></div>
-      <div class="trend" id="trend"></div>
-      <div class="sec-title" style="margin-top:18px"><h3>パット数</h3><span class="muted">少ないほど下</span></div>
-      <div class="trend" id="trend-putts"></div>
-      <div class="sec-title"><h3>マーカー</h3><span class="muted" id="count"></span></div>
+      <div class="sec-title" style="margin-top:4px"><h3>練習時間</h3><span class="muted" id="pt-sum"></span></div>
+      <div class="trend" id="pt-chart"></div>
+      <div class="sec-title"><h3>記録</h3><span class="muted" id="count"></span></div>
       <div class="coins" id="coins"></div>
     </div>
   </section>
@@ -306,13 +305,18 @@
   <section class="view" id="v-trend">
     <div class="wrap">
       <div class="page-head"><div><div class="eyebrow">TENDENCY</div><h2>傾向</h2></div></div>
+      <div class="sec-title" style="margin-top:4px"><h3>スコア</h3><span class="muted">少ないほど下</span></div>
+      <div class="trend" id="trend"></div>
+      <div class="sec-title" style="margin-top:18px"><h3>パット数</h3><span class="muted">少ないほど下</span></div>
+      <div class="trend" id="trend-putts"></div>
+      <div style="height:14px"></div>
       <div id="tendency"></div>
     </div>
   </section>
 
   <button class="fab" onclick="openAdd()" aria-label="記録する">＋</button>
   <nav class="tabbar">
-    <button class="on" data-v="home" onclick="tab('home')"><span class="ic">⛳</span>推移</button>
+    <button class="on" data-v="home" onclick="tab('home')"><span class="ic">⛳</span>記録</button>
     <button data-v="good" onclick="tab('good')"><span class="ic">🌱</span>よかったこと</button>
     <button data-v="trend" onclick="tab('trend')"><span class="ic">📈</span>傾向</button>
   </nav>
@@ -325,7 +329,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-09c';
+const APP_VERSION = '2026-11-09d';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -407,6 +411,8 @@ function tab(v) {
   document.querySelectorAll('.view').forEach(e => e.classList.toggle('on', e.id === 'v-' + v));
   document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   window.scrollTo(0, 0);
+  if (v === 'trend' && db.rounds.length) renderTendency();
+  if (v === 'home') renderPracticeChart();
   // 隠れていた間に描いたグラフは、開いたときに右端（最新）へ
   document.querySelectorAll(`#v-${v} .mini-scroll, #v-${v} .trend-scroll`).forEach(e => { e.scrollLeft = e.scrollWidth; });
 }
@@ -466,8 +472,7 @@ function renderHome() {
     <div class="stat"><b>${avgP}</b><span>直近5回のパット</span></div>`;
   const live = liveState();
   $('#live-banner').innerHTML = live ? `<button class="live-banner" onclick="resumeLive()">⛳ ラウンド中：${esc(shortCourse(live.draft.course))}　${live.idx + 1}番ホールから続ける</button>` : '';
-  renderTrend(rs, best);
-  renderTrend(rs, best, PUTTS_CHART);
+  renderPracticeChart();
   renderCoins(best);
   $('#count').textContent = `${db.rounds.length}ラウンド`;
 }
@@ -543,7 +548,7 @@ function renderTrend(all, best, o = SCORE_CHART) {
     </svg></div>
     <div class="trend-legend"><span>● ${o.tabs ? 'スコア' : 'パット'}（下ほど少ない）</span><span style="color:#c8693f">━ 平均 <b>${avg.toFixed(1)}</b></span><span><i></i>${o.legend}</span></div>`;
   const sc = el.querySelector('.trend-scroll'); sc.scrollLeft = sc.scrollWidth;
-  sc.addEventListener('scroll', () => { if (trendSyncing) return; trendSyncing = true; document.querySelectorAll('#v-home .trend-scroll').forEach(o => { if (o !== sc) o.scrollLeft = sc.scrollLeft; }); requestAnimationFrame(() => { trendSyncing = false; }); }, { passive: true });
+  sc.addEventListener('scroll', () => { if (trendSyncing) return; trendSyncing = true; document.querySelectorAll('#trend .trend-scroll, #trend-putts .trend-scroll').forEach(o => { if (o !== sc) o.scrollLeft = sc.scrollLeft; }); requestAnimationFrame(() => { trendSyncing = false; }); }, { passive: true });
 }
 
 function coinHTML(r, best, big) {
@@ -700,7 +705,7 @@ async function flushPendingNotes() {
 }
 
 /* ================= 練習 ================= */
-const PR_MIN = [30, 60, 90, 120, 150, 180, 240, 300];
+const PR_MIN = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300];
 const minLabel = m => m < 60 ? m + '分' : m % 60 ? `${Math.floor(m / 60)}時間${m % 60}分` : `${m / 60}時間`;
 const prIcon = () => '🏌️';
 function practiceRow(p) {
@@ -708,6 +713,35 @@ function practiceRow(p) {
     <div class="tee">${prIcon()}<small>${md(p.date)}</small></div>
     <div class="b"><div class="t">${esc(['練習', p.minutes && minLabel(p.minutes), p.place, (p.photos || []).length && '📷' + p.photos.length].filter(Boolean).join('　'))}</div>
     <div class="g ${p.good ? '' : 'none'}">${p.good ? esc(p.good) : 'よかったことを書く'}</div></div></div>`;
+}
+function renderPracticeChart() {
+  const el = $('#pt-chart'); if (!el) return;
+  const ps = db.practices, now = new Date().toLocaleDateString('sv-SE').slice(0, 7);
+  const first = [...ps.map(p => p.date), ...db.rounds.map(r => r.date)].sort()[0];
+  if (!first) { el.innerHTML = '<div class="empty">練習を記録すると、月ごとの時間がここに出ます</div>'; $('#pt-sum').textContent = ''; return; }
+  const months = []; let [y, m] = first.slice(0, 7).split('-').map(Number);
+  while (true) { const k = `${y}-${String(m).padStart(2, '0')}`; months.push(k); if (k >= now) break; if (++m > 12) { m = 1; y++; } }
+  const hours = months.map(k => sum(ps.filter(p => p.date.startsWith(k)).map(p => p.minutes || 0)) / 60);
+  const cnt = months.map(k => ps.filter(p => p.date.startsWith(k)).length);
+  const rounds = months.map(k => db.rounds.filter(r => r.date.startsWith(k)).length);
+  const i0 = months.length - 1;
+  $('#pt-sum').textContent = `今月 ${+hours[i0].toFixed(1)}時間・${cnt[i0]}回`;
+  const cw = el.clientWidth || 340, step = 46, padL = 22, padR = 22, H = 190, top = 26, bot = 46;
+  const W = Math.max(cw, padL + padR + step * months.length);
+  const max = Math.max(4, ...hours), ticks = niceTicks(0, max), hi = ticks.at(-1);
+  const y0 = H - bot, yv = v => y0 - v / hi * (y0 - top);
+  const x = i => W - padR - (months.length - i - 0.5) * step;  // 右端が今月
+  const grid = ticks.map(t => `<line x1="0" x2="${W}" y1="${yv(t)}" y2="${yv(t)}" stroke="#ded6c0" ${t ? 'stroke-dasharray="3 4"' : ''}/><text x="${W - 4}" y="${yv(t) - 3}" font-size="9" fill="#9aa19c" text-anchor="end">${t ? t + 'h' : ''}</text>`).join('');
+  const bars = months.map((k, i) => {
+    const h = hours[i], bx = x(i) - 14;
+    return `${h ? `<rect x="${bx}" y="${yv(h)}" width="28" height="${y0 - yv(h)}" rx="5" fill="${k === now ? '#d8895a' : '#8dc3bc'}" stroke="#2e4448" stroke-width=".8"/>
+      <text x="${x(i)}" y="${yv(h) - 5}" font-size="10.5" font-weight="700" fill="#2e4448" text-anchor="middle" font-family="Shippori Mincho, serif">${+h.toFixed(1)}</text>` : ''}
+      <text x="${x(i)}" y="${y0 + 15}" font-size="10" fill="${k === now ? '#c8693f' : '#4686a5'}" text-anchor="middle" font-weight="700">${+k.slice(5)}月</text>
+      ${rounds[i] ? `<text x="${x(i)}" y="${y0 + 31}" font-size="9.5" fill="#7d8682" text-anchor="middle">⛳${rounds[i]}</text>` : ''}`;
+  }).join('');
+  el.innerHTML = `<div class="trend-scroll"><svg width="${W}" height="${H}">${grid}${bars}</svg></div>
+    <div class="trend-legend"><span>月ごとの練習時間（時間）</span><span>⛳ ラウンド数</span></div>`;
+  const sc = el.querySelector('.trend-scroll'); sc.scrollLeft = sc.scrollWidth;
 }
 function openAdd() {
   const live = liveState();
@@ -1112,6 +1146,7 @@ function miniChart(vals, { lowerBetter = true, color = '#4686a5', fmt = v => v, 
     <div class="row muted"><span>ベスト ${fmt(lowerBetter ? Math.min(...ys) : Math.max(...ys))}${unit}</span><span>ワースト ${fmt(lowerBetter ? Math.max(...ys) : Math.min(...ys))}${unit}</span></div>`;
 }
 function renderTendency() {
+  { const all = sorted().filter(r => total(r) != null), best = bestRound(); renderTrend(all, best); renderTrend(all, best, PUTTS_CHART); }
   const rs = sorted().filter(r => total(r) != null);
   if (!rs.length) { $('#tendency').innerHTML = '<div class="empty">まだ記録がありません</div>'; return; }
   const ST = rs.map(stats);
@@ -1133,8 +1168,6 @@ function renderTendency() {
   const courseRows = Object.entries(cs).sort((a, b) => b[1].length - a[1].length || Math.min(...a[1]) - Math.min(...b[1]))
     .map(([c, v]) => `<tr><td>${esc(c)}</td><td class="muted" style="text-align:right">${v.length}回</td><td class="n">${Math.min(...v)}</td></tr>`).join('');
   $('#tendency').innerHTML =
-    card('スコア', rs.map(total), {}, '打') +
-    card('パット数', rs.map(putts), { color: '#6fb0aa' }, '') +
     (ST.some(s => s.fw) ? card('FWキープ率', ST.map(s => pctv(s.fw)), { lowerBetter: false, color: '#757145' }, '%') : '') +
     (ST.some(s => s.gir != null) ? card('パーオン', ST.map(s => s.gir ?? null), { lowerBetter: false, color: '#cf6f45' }, '回') : '') +
     (ST.some(s => s.dist) ? card('トリプル以上のホール', ST.map(s => s.dist ? s.dist.tp : null), { color: '#d8895a' }, '回') : '') +
@@ -1220,7 +1253,7 @@ async function checkUpdate() {
   } catch (e) {}
 }
 checkUpdate();
-window.addEventListener('resize', () => { if (cfg.token && db.rounds.length) renderHome(); });
+window.addEventListener('resize', () => { if (cfg.token && db.rounds.length) renderAll(); });
 start();
 </script>
 </body>
