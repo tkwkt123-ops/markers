@@ -260,6 +260,14 @@
   .good-item:active { transform: scale(.98); }
   .good-item .t { font-size: 11px; color: var(--ink-soft); letter-spacing: .05em; }
   .good-item .g { font-family: var(--hand); font-size: 14.5px; line-height: 1.8; white-space: pre-wrap; margin-top: 2px; }
+  .phs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ph { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; background: #e6dfcc; border: 1px solid var(--line); }
+  .ph img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; }
+  .ph button { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(46,68,72,.75); color: #fff; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
+  .ph.add { display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--fairway); border: 1.5px dashed var(--fairway); background: transparent; cursor: pointer; margin: 0; letter-spacing: 0; font-weight: 400; }
+  .photo-view { position: fixed; inset: 0; z-index: 80; background: rgba(20,30,34,.92); display: none; align-items: center; justify-content: center; }
+  .photo-view.on { display: flex; }
+  .photo-view img { max-width: 100%; max-height: 100%; }
   .links a { display: inline-block; margin: 4px 10px 0 0; font-size: 13px; }
   #setup { display: none; }
   #setup ol { line-height: 2; font-size: 14px; padding-left: 20px; }
@@ -289,7 +297,7 @@
 
   <section class="view" id="v-good">
     <div class="wrap">
-      <div class="page-head"><div><div class="eyebrow">GOOD POINTS</div><h2>いいところ</h2></div></div>
+      <div class="page-head"><div><div class="eyebrow">GOOD POINTS</div><h2>よかったこと</h2></div></div>
       <p class="muted" style="margin:-4px 0 14px;line-height:1.7">練習とラウンドの「よかったこと」を、新しい順に。</p>
       <div class="goods" id="goods"></div>
     </div>
@@ -305,7 +313,7 @@
   <button class="fab" onclick="openAdd()" aria-label="記録する">＋</button>
   <nav class="tabbar">
     <button class="on" data-v="home" onclick="tab('home')"><span class="ic">⛳</span>推移</button>
-    <button data-v="good" onclick="tab('good')"><span class="ic">🌱</span>いいところ</button>
+    <button data-v="good" onclick="tab('good')"><span class="ic">🌱</span>よかったこと</button>
     <button data-v="trend" onclick="tab('trend')"><span class="ic">📈</span>傾向</button>
   </nav>
 </div>
@@ -313,10 +321,11 @@
 <div class="sheet-bg" id="sheet-bg" onclick="closeSheet()"></div>
 <div class="sheet" id="sheet"><div class="grab" id="grab"></div><div class="wrap" id="sheet-body"></div></div>
 <div class="toast" id="toast"></div>
+<div class="photo-view" id="photo-view" onclick="this.classList.remove('on')"><img alt=""></div>
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-09b';
+const APP_VERSION = '2026-11-09c';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -691,14 +700,14 @@ async function flushPendingNotes() {
 }
 
 /* ================= 練習 ================= */
-const PR_KINDS = [['打ちっぱなし', '🏌️'], ['インドア', '🏠'], ['レッスン', '👟'], ['パター', '⛳'], ['アプローチ', '🎯'], ['コース練習', '🌳'], ['素振り・家', '💭']];
-const PR_MIN = [30, 60, 90, 120];
-const prIcon = k => (PR_KINDS.find(x => x[0] === k) || [, '📝'])[1];
+const PR_MIN = [30, 60, 90, 120, 150, 180, 240, 300];
+const minLabel = m => m < 60 ? m + '分' : m % 60 ? `${Math.floor(m / 60)}時間${m % 60}分` : `${m / 60}時間`;
+const prIcon = () => '🏌️';
 function practiceRow(p) {
   return `<div class="pr" onclick="openPractice('${p.id}')">
-    <div class="tee">${prIcon(p.kind)}<small>${md(p.date)}</small></div>
-    <div class="b"><div class="t">${esc([p.kind, p.place, p.minutes && p.minutes + '分', p.theme && 'テーマ：' + p.theme].filter(Boolean).join('　'))}</div>
-    <div class="g ${p.good ? '' : 'none'}">${p.good ? '🌱 ' + esc(p.good) : 'よかったことを書く'}</div></div></div>`;
+    <div class="tee">${prIcon()}<small>${md(p.date)}</small></div>
+    <div class="b"><div class="t">${esc(['練習', p.minutes && minLabel(p.minutes), p.place, (p.photos || []).length && '📷' + p.photos.length].filter(Boolean).join('　'))}</div>
+    <div class="g ${p.good ? '' : 'none'}">${p.good ? esc(p.good) : 'よかったことを書く'}</div></div></div>`;
 }
 function openAdd() {
   const live = liveState();
@@ -709,59 +718,94 @@ function openAdd() {
 let pdraft = null;
 function openPracticeEdit(id) {
   const p = id && db.practices.find(x => x.id === id);
-  // 前回と同じ種類・場所・時間から始める（入力を少なく）
+  // 時間だけ前回と同じから始める（場所は外練のときだけ書く）
   const last = [...db.practices].sort((a, b) => b.date.localeCompare(a.date))[0] || {};
-  pdraft = p ? JSON.parse(JSON.stringify(p)) : { id: null, date: new Date().toLocaleDateString('sv-SE'), kind: last.kind || '打ちっぱなし', place: last.place || '', minutes: last.minutes || 60, theme: '', good: '', memo: '', links: [] };
+  pdraft = p ? JSON.parse(JSON.stringify(p)) : { id: null, date: new Date().toLocaleDateString('sv-SE'), place: '', minutes: last.minutes || 60, good: '', memo: '', links: [], photos: [] };
+  pdraft.photos ||= []; pdraft.newPhotos = [];
   renderPracticeEdit();
 }
 function renderPracticeEdit() {
   const d = pdraft;
   const places = [...new Set(db.practices.map(p => p.place).filter(Boolean))];
+  const thumbs = [...d.photos.map((ph, i) => `<div class="ph"><img data-photo="${esc(ph)}" alt=""><button type="button" onclick="pdraft.photos.splice(${i},1);renderPracticeEditKeep()">×</button></div>`),
+    ...d.newPhotos.map((ph, i) => `<div class="ph"><img src="${ph}" alt=""><button type="button" onclick="pdraft.newPhotos.splice(${i},1);renderPracticeEditKeep()">×</button></div>`)].join('');
   openSheet(`<h3 style="margin-bottom:4px">${d.id ? '練習を書き直す' : '練習を記録'}</h3>
     <div class="form">
-      <label>よかったこと（いいところを拾う）</label>
+      <label>よかったこと</label>
       <textarea id="pr-good" placeholder="例：ゆっくり振ったら芯に当たった" oninput="pdraft.good=this.value">${esc(d.good)}</textarea>
-      <div class="two">
-        <div><label>日付</label><input type="date" value="${d.date}" onchange="pdraft.date=this.value"></div>
-        <div><label>時間</label>${segHTML(PR_MIN.map(m => m + '分'), d.minutes ? d.minutes + '分' : '', "v=>{pdraft.minutes=parseInt(v);renderPracticeEditKeep()}", 'sm')}</div>
-      </div>
-      <label>種類</label>${segHTML(PR_KINDS.map(k => k[0]), d.kind, "v=>{pdraft.kind=v;renderPracticeEditKeep()}", 'sm')}
-      <label>場所</label><input list="pr-places" value="${esc(d.place)}" oninput="pdraft.place=this.value" placeholder="練習場の名前">
+      <label>日付</label><input type="date" value="${d.date}" onchange="pdraft.date=this.value">
+      <label>時間</label>${segHTML(PR_MIN.map(minLabel), d.minutes ? minLabel(d.minutes) : '', `v=>{pdraft.minutes=[${PR_MIN}][${JSON.stringify(PR_MIN.map(minLabel)).replace(/"/g, "'")}.indexOf(v)];renderPracticeEditKeep()}`, 'sm')}
+      <label>写真</label>
+      <div class="phs">${thumbs}<label class="ph add">＋<input type="file" accept="image/*" multiple onchange="addPhotos(this.files)" hidden></label></div>
+      <label>外練のときの場所</label><input list="pr-places" value="${esc(d.place)}" oninput="pdraft.place=this.value" placeholder="なければ空のままで">
       <datalist id="pr-places">${places.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
-      <details ${d.theme || d.memo || d.links.length ? 'open' : ''}><summary class="muted" style="margin-top:14px">テーマ・メモ・動画（あとからでもOK）</summary>
-        <label>テーマ</label><input value="${esc(d.theme)}" oninput="pdraft.theme=this.value" placeholder="例：ドライバーの右へのミスを減らす">
-        <label>メモ（コーチに言われたことなど）</label><textarea style="min-height:70px" oninput="pdraft.memo=this.value">${esc(d.memo)}</textarea>
-        <label>動画・写真のリンク（1行に1つ）</label><textarea style="min-height:60px;font-family:var(--maru);font-size:14px" placeholder="https://…" oninput="pdraft.links=this.value.split('\\n').map(x=>x.trim()).filter(Boolean)">${esc(d.links.join('\n'))}</textarea>
-      </details>
+      <label>メモ</label><textarea style="min-height:70px" oninput="pdraft.memo=this.value">${esc(d.memo)}</textarea>
       <div class="btns"><button class="btn" onclick="${d.id ? `openPractice('${d.id}')` : 'closeSheet()'}">やめる</button><button class="btn primary" onclick="savePractice(this)">保存</button></div>
     </div>`, true);
+  loadPhotos();
   if (!d.id && !d.good) setTimeout(() => $('#pr-good')?.focus(), 300);
 }
+// 写真：ライブラリから選んで、長い辺1600pxのJPEGに縮めてから保存（記録と同じ非公開リポジトリの photos/ に置く）
+async function addPhotos(files) {
+  for (const f of files) {
+    try {
+      const img = await createImageBitmap(f);
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      pdraft.newPhotos.push(c.toDataURL('image/jpeg', 0.82));
+    } catch (e) { toast('この写真は読み込めませんでした'); }
+  }
+  renderPracticeEditKeep();
+}
+const photoCache = {};
+async function loadPhotos() {
+  for (const el of document.querySelectorAll('img[data-photo]')) {
+    const path = el.dataset.photo;
+    try {
+      if (!photoCache[path]) photoCache[path] = 'data:image/jpeg;base64,' + (await gh(path)).content.replace(/\n/g, '');
+      el.src = photoCache[path];
+    } catch (e) { el.alt = '読み込めませんでした'; }
+  }
+}
+function showPhoto(el) { if (el.src) { $('#photo-view img').src = el.src; $('#photo-view').classList.add('on'); } }
 function renderPracticeEditKeep() { const y = $('#sheet').scrollTop; renderPracticeEdit(); $('#sheet').scrollTop = y; }
 async function savePractice(btn) {
   const d = pdraft;
   if (!d.date) { toast('日付を入れてください'); return; }
   const isNew = !d.id;
   if (isNew) d.id = 'p' + d.date.replace(/-/g, '') + '-' + Date.now().toString(36).slice(-4);
-  ['place', 'theme', 'good', 'memo'].forEach(k => d[k] = (d[k] || '').trim());
-  const done = busy(btn, '保存中…');
-  const ok = await commit(db => { db.practices = db.practices.filter(p => p.id !== d.id); db.practices.push(d); }, `${isNew ? '練習を記録' : '練習を修正'}：${d.date} ${d.kind}${d.place ? ' ' + d.place : ''}`);
+  ['place', 'good', 'memo'].forEach(k => d[k] = (d[k] || '').trim());
+  const done = busy(btn, d.newPhotos.length ? '写真を送っています…' : '保存中…');
+  // 先に写真を送る（失敗したら記録は保存しない）
+  try {
+    for (const [i, url] of d.newPhotos.entries()) {
+      const path = `photos/${d.id}-${Date.now().toString(36)}${i}.jpg`;
+      await gh(path, { method: 'PUT', body: JSON.stringify({ message: `練習の写真：${d.date}`, content: url.split(',')[1] }) });
+      photoCache[path] = url; d.photos.push(path);
+    }
+    d.newPhotos = [];
+  } catch (e) { done(); if (isNew) d.id = null; toast('写真を送れませんでした（' + (e.status || '通信エラー') + '）'); return; }
+  const rec = { ...d }; delete rec.newPhotos;
+  const ok = await commit(db => { db.practices = db.practices.filter(p => p.id !== rec.id); db.practices.push(rec); }, `${isNew ? '練習を記録' : '練習を修正'}：${d.date}${d.place ? ' ' + d.place : ''}`);
   done();
   if (ok) { toast('保存しました'); openPractice(d.id); } else if (isNew) d.id = null;
 }
 function openPractice(id) {
   const p = db.practices.find(x => x.id === id); if (!p) return;
   openSheet(`<div class="detail-head" style="align-items:center">
-      <div class="tee" style="width:64px;height:64px;border-radius:50%;background:#e7efe9;border:1px solid #2e4448;display:flex;align-items:center;justify-content:center;font-size:30px;flex:none">${prIcon(p.kind)}</div>
-      <div><div class="muted">${p.date.replace(/-/g, '/')}</div><h3>${esc(p.kind)}${p.place ? `<span style="font-size:14px"> ・ ${esc(p.place)}</span>` : ''}</h3>
-      <div class="chips">${[p.minutes && p.minutes + '分', p.theme && 'テーマ：' + p.theme].filter(Boolean).map(c => `<span class="chip">${esc(c)}</span>`).join('')}</div></div></div>
+      <div class="tee" style="width:64px;height:64px;border-radius:50%;background:#e7efe9;border:1px solid #2e4448;display:flex;align-items:center;justify-content:center;font-size:30px;flex:none">${prIcon()}</div>
+      <div><div class="muted">${p.date.replace(/-/g, '/')}</div><h3>練習${p.place ? `<span style="font-size:14px"> ・ ${esc(p.place)}</span>` : ''}</h3>
+      <div class="chips">${p.minutes ? `<span class="chip">${minLabel(p.minutes)}</span>` : ''}</div></div></div>
     <div class="note-label">よかったこと</div>
     <textarea class="note note-edit" id="pr-good-inline" rows="2" placeholder="タップして書く" oninput="autosize(this);prGoodInput('${p.id}',this.value)" onblur="prGoodFlush('${p.id}')">${esc(p.good)}</textarea>
     <div class="muted" id="note-status"></div>
     ${p.memo ? `<div class="note-label">メモ</div><div class="note">${esc(p.memo)}</div>` : ''}
+    ${(p.photos || []).length ? `<div class="phs" style="margin-top:12px">${p.photos.map(ph => `<div class="ph"><img data-photo="${esc(ph)}" alt="" onclick="showPhoto(this)"></div>`).join('')}</div>` : ''}
     ${p.links.length ? `<div class="note-label">動画・写真</div><div class="links">${p.links.map((u, i) => `<a href="${esc(u)}" target="_blank">▶ ${p.links.length > 1 ? (i + 1) + 'つめ' : '開く'}</a>`).join('')}</div>` : ''}
     <div class="btns"><button class="btn" onclick="openPracticeEdit('${p.id}')">書き直す</button><button class="btn danger" onclick="delPractice('${p.id}')">消す</button></div>`);
   autosize($('#pr-good-inline'));
+  loadPhotos();
 }
 // 練習の「よかったこと」もその場で書けて、手を止めたら保存（ラウンドの振り返りと同じ仕組み）
 let prTimer = null;
@@ -779,13 +823,13 @@ async function prGoodFlush(id) {
 }
 async function delPractice(id) {
   const p = db.practices.find(x => x.id === id);
-  if (!confirm(`${p.date} ${p.kind} の練習を消しますか？`)) return;
+  if (!confirm(`${p.date} の練習を消しますか？`)) return;
   closeSheet();
-  if (await commit(d => { d.practices = d.practices.filter(x => x.id !== id); }, `練習を削除：${p.date} ${p.kind}`)) toast('消しました');
+  if (await commit(d => { d.practices = d.practices.filter(x => x.id !== id); }, `練習を削除：${p.date}`)) toast('消しました');
 }
 function renderGoods() {
   const items = [
-    ...db.practices.filter(p => p.good).map(p => ({ date: p.date, label: `${prIcon(p.kind)} ${p.kind}${p.place ? '・' + p.place : ''}`, g: p.good, open: `openPractice('${p.id}')` })),
+    ...db.practices.filter(p => p.good).map(p => ({ date: p.date, label: `${prIcon()} 練習${p.place ? '・' + p.place : ''}`, g: p.good, open: `openPractice('${p.id}')` })),
     ...db.rounds.filter(r => r.good).map(r => ({ date: r.date, label: `⛳ ${shortCourse(r.course)}（${total(r) ?? '–'}）`, g: r.good, open: `openRound('${r.id}')` })),
   ].sort((a, b) => b.date.localeCompare(a.date));
   $('#goods').innerHTML = items.length ? items.map(x => `<div class="good-item" onclick="${x.open}"><div class="t">${x.date.replace(/-/g, '/')}　${esc(x.label)}</div><div class="g">${esc(x.g)}</div></div>`).join('')
