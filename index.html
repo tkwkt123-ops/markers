@@ -390,7 +390,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-10f';
+const APP_VERSION = '2026-11-10g';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -649,8 +649,7 @@ function renderCoins(best) {
   let html = '';
   months.forEach(m => {
     const mr = rs.filter(r => r.date.startsWith(m)), mp = ps.filter(p => p.date.startsWith(m));
-    const th = MONTH_THEMES[+m.slice(5)];
-    html += `<div class="month">${m.slice(0, 4)}年${+m.slice(5)}月${mp.length ? `<span class="theme">${stickerArt(th[1][0], 18, -8)}${th[0]}</span>` : ''}<small>${[mr.length && `ラウンド${mr.length}回`, mp.length && `練習${mp.length}回`].filter(Boolean).join('・')}</small></div>`;
+    html += `<div class="month">${m.slice(0, 4)}年${+m.slice(5)}月<small>${[mr.length && `ラウンド${mr.length}回`, mp.length && `練習${mp.length}回`].filter(Boolean).join('・')}</small></div>`;
     html += mr.map(r => `<div class="coin-wrap" onclick="openRound('${r.id}')">${coinHTML(r, best)}</div>`).join('');
     if (mp.length) html += `<div class="practices">${mp.map(practiceRow).join('')}</div>`;
   });
