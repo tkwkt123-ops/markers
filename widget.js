@@ -58,7 +58,7 @@ async function dayImage(day, info) {
   return dc.getImage();
 }
 async function calendarWidget() {
-  const w = new ListWidget(); w.backgroundColor = new Color('#fbfbfa'); w.url = BASE; w.setPadding(14, 12, 12, 12);
+  const w = new ListWidget(); w.backgroundColor = new Color('#fbfbfa'); w.url = 'x-safari-https://tkwkt123-ops.github.io/markers/'; w.setPadding(14, 12, 12, 12);
   w.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000);
   if (!db) { text(w, 'Markers', 14, C.sage, 'bold'); w.addSpacer(6); text(w, err, 12, C.soft); return w; }
   const ps = db.practices || [], rounds = db.rounds || [], rests = db.rests || [];
@@ -95,7 +95,7 @@ if (fam === 'medium' && param !== 'まとめ') w = await calendarWidget();
 else {
 w = new ListWidget();
 w.backgroundColor = C.bg;
-w.url = 'https://tkwkt123-ops.github.io/markers/';
+w.url = 'x-safari-https://tkwkt123-ops.github.io/markers/';
 w.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000);
 
 if (!db) {
