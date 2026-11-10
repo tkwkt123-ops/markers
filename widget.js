@@ -41,7 +41,7 @@ const fm = FileManager.local();
 async function stickerImage(name) {
   const f = fm.joinPath(fm.cacheDirectory(), 'markers-' + name);
   if (fm.fileExists(f)) return fm.readImage(f);
-  const img = await new Request(BASE + 'stickers/' + name).loadImage();
+  const img = await new Request(BASE + 'stickers/' + name + '?v=1').loadImage();
   fm.writeImage(f, img); return img;
 }
 function hashStr(t) { let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
