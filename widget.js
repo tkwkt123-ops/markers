@@ -80,18 +80,48 @@ async function calendarWidget() {
     const info = { today: isToday, future: k > today, rest: rests.includes(k),
       round: r ? r.holes.reduce((a, h) => a + h.score, 0) : null,
       sticker: p ? `m${+k.slice(5, 7)}-${hashStr(p.id) % 5}.png` : null };
-    const col = row.addStack(); col.layoutVertically(); col.centerAlignContent(); col.size = new Size(40, 66);
-    text(col, WD[i], 11, isToday ? C.sage : C.soft, isToday ? 'bold' : 'medium');
+    const col = row.addStack(); col.layoutVertically(); col.size = new Size(40, 66);
+    const lr = col.addStack(); lr.size = new Size(40, 14); lr.addSpacer(); const lt = text(lr, WD[i], 11, isToday ? C.sage : C.soft, isToday ? 'bold' : 'medium'); lt.centerAlignText(); lr.addSpacer();
     col.addSpacer(6);
-    const im = col.addImage(await dayImage(d, info)); im.imageSize = new Size(36, 36);
+    const ir = col.addStack(); ir.size = new Size(40, 36); ir.addSpacer(); const im = ir.addImage(await dayImage(d, info)); im.imageSize = new Size(36, 36); ir.addSpacer();
     if (i < 6) row.addSpacer(4);
   }
   row.addSpacer();
   return w;
 }
+// ===== 練習時間のレベル（小サイズのふだんの表示）。合計が増えると色が変わっていく =====
+const LEVELS = [[0, 'ホワイト', '#ffffff', '#3d4441'], [10, 'イエロー', '#f6dc7a', '#3d4441'], [30, 'サーモン', '#f4b097', '#3d4441'], [60, 'セージ', '#79a694', '#ffffff'], [100, 'ブルー', '#9cc3d9', '#3d4441'], [160, 'ネイビー', '#3f5468', '#ffffff'], [250, 'ブラック', '#2b2f2e', '#ffffff']];
+function bar(ratio, fg, bg) {
+  const dc = new DrawContext(); dc.size = new Size(240, 12); dc.opaque = false; dc.respectScreenScale = true;
+  const pill = (w, c) => { const pth = new Path(); pth.addRoundedRect(new Rect(0, 0, w, 12), 6, 6); dc.addPath(pth); dc.setFillColor(new Color(c)); dc.fillPath(); };
+  pill(240, bg); if (ratio > 0) pill(Math.max(12, 240 * Math.min(ratio, 1)), fg);
+  return dc.getImage();
+}
+function levelWidget() {
+  const w = new ListWidget(); w.url = 'x-safari-https://tkwkt123-ops.github.io/markers/'; w.setPadding(14, 14, 14, 14);
+  w.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000);
+  if (!db) { w.backgroundColor = C.bg; text(w, 'Markers', 14, C.sage, 'bold'); w.addSpacer(6); text(w, err, 12, C.soft); return w; }
+  const hours = (db.practices || []).reduce((a, p) => a + (p.minutes || 0), 0) / 60;
+  let li = 0; LEVELS.forEach((l, i) => { if (hours >= l[0]) li = i; });
+  const [from, name, bg, fg] = LEVELS[li], next = LEVELS[li + 1];
+  const ink = new Color(fg), soft = new Color(fg, 0.7);
+  w.backgroundColor = new Color(bg);
+  text(w, '練習の合計（時間）', 11, ink, 'medium');
+  w.addSpacer(2);
+  const big = text(w, Math.round(hours * 10) / 10, 40, ink, 'bold');
+  w.addSpacer();
+  text(w, name, 13, ink, 'bold');
+  w.addSpacer(5);
+  const ratio = next ? (hours - from) / (next[0] - from) : 1;
+  const im = w.addImage(bar(ratio, fg === '#ffffff' ? '#ffffff' : '#3d4441', fg === '#ffffff' ? '#ffffff55' : '#3d444126')); im.imageSize = new Size(130, 7);
+  w.addSpacer(5);
+  text(w, next ? `${next[1]}まであと ${Math.round((next[0] - hours) * 10) / 10}時間` : 'いちばん上のレベル', 10, soft, 'medium');
+  return w;
+}
 const param = (args.widgetParameter || '').trim();
 let w;
 if (fam === 'medium' && param !== 'まとめ') w = await calendarWidget();
+else if (fam === 'small' && param !== 'まとめ') w = levelWidget();
 else {
 w = new ListWidget();
 w.backgroundColor = C.bg;
