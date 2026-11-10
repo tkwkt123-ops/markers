@@ -70,7 +70,8 @@ async function calendarWidget() {
   text(head, `${now.getFullYear()}年 ${now.getMonth() + 1}月`, 14, C.ink, 'bold'); head.addSpacer();
   text(head, weekCnt ? `今週 ${Math.round(weekMin / 6) / 10}時間・${weekCnt}回` : '今週の練習はまだ', 11, C.soft, 'medium');
   w.addSpacer(10);
-  const row = w.addStack();
+  // 7日分を必ず収める：列の幅を固定し、左右だけ伸ばす
+  const row = w.addStack(); row.centerAlignContent(); row.addSpacer();
   const WD = ['日', '月', '火', '水', '木', '金', '土'];
   for (const [i, d] of days.entries()) {
     const k = ymd(d), isToday = k === today;
@@ -79,12 +80,13 @@ async function calendarWidget() {
     const info = { today: isToday, future: k > today, rest: rests.includes(k),
       round: r ? r.holes.reduce((a, h) => a + h.score, 0) : null,
       sticker: p ? `m${+k.slice(5, 7)}-${hashStr(p.id) % 5}.png` : null };
-    const col = row.addStack(); col.layoutVertically(); col.centerAlignContent();
-    const lw = col.addStack(); lw.addSpacer(); text(lw, WD[i], 11, isToday ? C.sage : C.soft, isToday ? 'bold' : 'medium'); lw.addSpacer();
+    const col = row.addStack(); col.layoutVertically(); col.centerAlignContent(); col.size = new Size(40, 66);
+    text(col, WD[i], 11, isToday ? C.sage : C.soft, isToday ? 'bold' : 'medium');
     col.addSpacer(6);
-    const iw = col.addStack(); iw.addSpacer(); const im = iw.addImage(await dayImage(d, info)); im.imageSize = new Size(38, 38); iw.addSpacer();
-    if (i < 6) row.addSpacer();
+    const im = col.addImage(await dayImage(d, info)); im.imageSize = new Size(36, 36);
+    if (i < 6) row.addSpacer(4);
   }
+  row.addSpacer();
   return w;
 }
 const param = (args.widgetParameter || '').trim();
