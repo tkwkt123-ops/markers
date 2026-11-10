@@ -1425,7 +1425,7 @@ function setupHTML(inSheet) {
     <div class="btns"><button class="btn primary" type="submit">つなぐ</button></div>
   </form>`;
 }
-/* ================= 通知（記録がない日の21時にお知らせ） ================= */
+/* ================= 通知（記録がない日の22時にお知らせ） ================= */
 // 毎晩、markers-data の GitHub Actions が記録を確かめて、なければここに登録した端末へ送る
 const VAPID_PUBLIC = 'BOH_CVVGiR62CICZ90f2dOiLBcrTQDFhsgVptASs4p0HOPOYphE3p-UiO15zHZ7VL5a-1VKwD_SjjV9D_MNw_ew';
 const PUSH_FILE = 'push.json';
@@ -1467,7 +1467,7 @@ async function pushHTML() {
   const st = await pushState();
   if (st === 'unsupported' || !standalone()) return `<div class="card" style="margin:6px 0 14px"><h4>記録がない日の通知</h4><p class="muted" style="line-height:1.7;margin:6px 0 0">ホーム画面のMarkersのアイコンから開いたときに設定できます（Safariの共有ボタン →「ホーム画面に追加」）。</p></div>`;
   return `<div class="card" style="margin:6px 0 14px"><h4>記録がない日の通知</h4>
-    <p class="muted" style="line-height:1.7;margin:6px 0 10px">その日に練習もラウンドも記録がなければ、21時ごろにお知らせします。</p>
+    <p class="muted" style="line-height:1.7;margin:6px 0 10px">その日に練習もラウンドも記録がなければ、22時ごろにお知らせします。</p>
     <button class="btn ${st === 'on' ? '' : 'primary'}" style="width:100%" onclick="togglePush(this)">${st === 'on' ? '通知をやめる' : '通知を受け取る'}</button></div>`;
 }
 async function openSettings() { openSheet((await pushHTML()) + setupHTML(true)); }
