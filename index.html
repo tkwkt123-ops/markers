@@ -399,7 +399,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-10h';
+const APP_VERSION = '2026-11-10i';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1425,7 +1425,52 @@ function setupHTML(inSheet) {
     <div class="btns"><button class="btn primary" type="submit">つなぐ</button></div>
   </form>`;
 }
-function openSettings() { openSheet(setupHTML(true)); }
+/* ================= 通知（記録がない日の21時にお知らせ） ================= */
+// 毎晩、markers-data の GitHub Actions が記録を確かめて、なければここに登録した端末へ送る
+const VAPID_PUBLIC = 'BOH_CVVGiR62CICZ90f2dOiLBcrTQDFhsgVptASs4p0HOPOYphE3p-UiO15zHZ7VL5a-1VKwD_SjjV9D_MNw_ew';
+const PUSH_FILE = 'push.json';
+const standalone = () => window.navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+async function pushState() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg && await reg.pushManager.getSubscription();
+    return sub ? 'on' : 'off';
+  } catch (e) { return 'unsupported'; }
+}
+function b64url(s) { const p = '='.repeat((4 - s.length % 4) % 4); return Uint8Array.from(atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)); }
+async function editPushFile(fn, msg) {
+  let sha = null, list = { subs: [] };
+  try { const j = await gh(PUSH_FILE); sha = j.sha; list = JSON.parse(b64dec(j.content)); } catch (e) { if (e.status !== 404) throw e; }
+  fn(list);
+  await gh(PUSH_FILE, { method: 'PUT', body: JSON.stringify({ message: msg, content: b64enc(JSON.stringify(list, null, 1) + '\n'), ...(sha ? { sha } : {}) }) });
+}
+async function togglePush(btn) {
+  const done = busy(btn, '設定しています…');
+  try {
+    if (await pushState() === 'on') {
+      const reg = await navigator.serviceWorker.getRegistration(), sub = await reg.pushManager.getSubscription();
+      await editPushFile(l => { l.subs = l.subs.filter(x => x.endpoint !== sub.endpoint); }, '通知をやめる');
+      await sub.unsubscribe(); toast('通知をやめました');
+    } else {
+      if (await Notification.requestPermission() !== 'granted') { done(); toast('通知が許可されていません（設定アプリ→通知→Markers）'); return; }
+      const reg = await navigator.serviceWorker.register('sw.js');
+      await navigator.serviceWorker.ready;
+      const sub = (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64url(VAPID_PUBLIC) })).toJSON();
+      await editPushFile(l => { l.subs = l.subs.filter(x => x.endpoint !== sub.endpoint); l.subs.push({ ...sub, added: new Date().toISOString().slice(0, 10) }); }, '通知を受け取る端末を登録');
+      toast('通知を入れました');
+    }
+  } catch (e) { toast('設定できませんでした（' + (e.status || e.message || 'エラー') + '）'); }
+  done(); openSettings();
+}
+async function pushHTML() {
+  const st = await pushState();
+  if (st === 'unsupported' || !standalone()) return `<div class="card" style="margin:6px 0 14px"><h4>記録がない日の通知</h4><p class="muted" style="line-height:1.7;margin:6px 0 0">ホーム画面のMarkersのアイコンから開いたときに設定できます（Safariの共有ボタン →「ホーム画面に追加」）。</p></div>`;
+  return `<div class="card" style="margin:6px 0 14px"><h4>記録がない日の通知</h4>
+    <p class="muted" style="line-height:1.7;margin:6px 0 10px">その日に練習もラウンドも記録がなければ、21時ごろにお知らせします。</p>
+    <button class="btn ${st === 'on' ? '' : 'primary'}" style="width:100%" onclick="togglePush(this)">${st === 'on' ? '通知をやめる' : '通知を受け取る'}</button></div>`;
+}
+async function openSettings() { openSheet((await pushHTML()) + setupHTML(true)); }
 async function saveSettings() {
   busy(document.querySelector('#sheet .btn.primary, #setup .btn.primary'), 'つないでいます…');
   cfg.token = $('#st-token').value.trim();
