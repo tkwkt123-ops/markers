@@ -252,6 +252,7 @@
   .pr .t { font-size: 12px; color: var(--ink-soft); }
   .pr .g { font-family: var(--hand); font-size: 14px; line-height: 1.6; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .pr .g.none { color: #c4c4c4; }
+  .pr.rest { padding-top: 8px; padding-bottom: 8px; align-items: center; background: rgba(255,255,255,.6) !important; box-shadow: none !important; }
   .thumb { flex: none; position: relative; width: 64px; height: 64px; border-radius: 9px; overflow: hidden; background: #eeeeee; border: 1px solid var(--line); }
   .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .thumb span { position: absolute; right: 3px; bottom: 3px; background: rgba(0,0,0,.75); color: #fff; font-size: 10px; border-radius: 8px; padding: 0 5px; line-height: 16px; }
@@ -407,7 +408,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-10j';
+const APP_VERSION = '2026-11-12a';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -671,9 +672,10 @@ function renderCoins(best) {
     const mr = rs.filter(r => r.date.startsWith(m)), mp = ps.filter(p => p.date.startsWith(m));
     html += `<div class="month">${m.slice(0, 4)}年${+m.slice(5)}月<small>${[mr.length && `ラウンド${mr.length}回`, mp.length && `練習${mp.length}回`, db.rests.filter(x => x.startsWith(m)).length && `休み${db.rests.filter(x => x.startsWith(m)).length}日`].filter(Boolean).join('・')}</small></div>`;
     html += mr.map(r => `<div class="coin-wrap" onclick="openRound('${r.id}')">${coinHTML(r, best)}</div>`).join('');
-    if (mp.length) html += `<div class="practices">${mp.map(practiceRow).join('')}</div>`;
-    const mrest = db.rests.filter(x => x.startsWith(m)).sort().reverse();
-    if (mrest.length) html += `<div class="rests"><span class="rl">休み</span>${mrest.map(x => `<button class="rest-chip" onclick="if(confirm('${md(x)}の休みを取り消しますか？'))toggleRest('${x}')">${md(x)}</button>`).join('')}</div>`;
+    // 練習と休みは、日付の新しい順にまぜて並べる（ラウンドは上のまま）
+    const items = [...mp.map(p => ({ date: p.date, html: practiceRow(p) })), ...db.rests.filter(x => x.startsWith(m)).map(x => ({ date: x, html: restRow(x) }))]
+      .sort((a, b) => b.date.localeCompare(a.date));
+    if (items.length) html += `<div class="practices">${items.map(x => x.html).join('')}</div>`;
   });
   $('#coins').innerHTML = html;
   loadThumbs();
@@ -896,6 +898,11 @@ function sticker(id, size = 46, date) {
   const h = hashStr(id || ''), rot = (h >> 8) % 25 - 12;
   const set = date ? MONTH_THEMES[+date.slice(5, 7)][1] : STICKERS, art = set[h % set.length];
   return `<svg class="sticker" width="${size}" height="${size}" viewBox="0 0 64 64" style="transform:rotate(${rot}deg)"><g filter="url(#stk)">${art}</g></svg>`;
+}
+function restRow(date) {
+  return `<div class="pr rest" onclick="if(confirm('${md(date)}の休みを取り消しますか？'))toggleRest('${date}')">
+    <div class="tee"><svg width="40" height="40" viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="#eef5f1"/><path d="M58 32 A19 19 0 1 0 66 62 A14 14 0 1 1 58 32 Z" fill="#9dbcaf"/></svg><small>${md(date)}</small></div>
+    <div class="b"><div class="g" style="color:#a2a8a5">休み</div></div></div>`;
 }
 function practiceRow(p) {
   return `<div class="pr" onclick="openPractice('${p.id}')">
