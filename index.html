@@ -300,7 +300,7 @@
   .gl-pars small { font-size: 11px; font-weight: 700; color: #a2a8a5; margin-right: 2px; }
   .gl-pars button { width: 38px; height: 38px; border-radius: 10px; border: 1.5px solid #dfe7e3; background: #fff; font-family: var(--mincho); font-size: 18px; font-weight: 700; color: #a2a8a5; padding: 0; }
   .gl-pars button.on { background: #79a694; border-color: #79a694; color: #fff; box-shadow: 0 4px 10px rgba(121,166,148,.35); }
-  .gl-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .gl-bottom { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 14px; }
   .gl-bottom .gl-card { text-align: center; padding: 14px; font-size: 14px; text-decoration: none; }
   .gl-card.ghost { background: #fff; color: #79a694; box-shadow: 0 4px 12px rgba(0,0,0,.05); }
   .gl-nine { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
@@ -485,7 +485,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13e';
+const APP_VERSION = '2026-11-13f';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1428,7 +1428,7 @@ function renderLive() {
     <div class="gl-tee" style="grid-template-columns:repeat(${tee.length},1fr)">${tee.map(([v, l, ic]) => `<button type="button" class="${h.dir === v ? 'on' : ''}" onclick="setDir(${i},'${v}')"><span>${ic}</span>${l}</button>`).join('')}</div>
     <div class="gl-cnt">${[['ob', 'OB数'], ['bunker', 'バンカー'], ['pen', 'ペナルティ']].map(([k, l]) => `<div><div class="l">${l}</div><div class="v"><b>${h[k] || 0}</b>回</div><div class="pm"><button type="button" onclick="count(${i},'${k}',-1)">−</button><button type="button" onclick="count(${i},'${k}',1)">＋</button></div></div>`).join('')}</div>
     <details class="gl-memo" ${h.memo ? 'open' : ''}><summary>メモ</summary><textarea oninput="setH(${i},'memo',this.value,true)" placeholder="風、ライ、狙い、気づいたこと">${esc(h.memo || '')}</textarea></details>
-    <div class="gl-bottom"><button type="button" class="gl-card" onclick="openLiveCard()">スコアカード</button>${draft.layout ? `<a class="gl-card ghost" href="${esc(draft.layout)}" target="_blank">コースマップ ↗</a>` : '<span></span>'}</div>
+    <div class="gl-bottom"><button type="button" class="gl-card" onclick="openLiveCard()">スコアカード</button></div>
     <div class="btns"><button class="btn" onclick="liveMode=false;renderEdit()">全体を見る・振り返りを書く</button></div>
     <label style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:12px;letter-spacing:0"><input type="checkbox" style="width:auto" ${draft.startIn ? 'checked' : ''} onchange="draft.startIn=this.checked;saveLiveLocal();renderLive()">${esc(nineName(1))}からスタート</label>
     <p class="muted" id="live-status" style="text-align:center;margin-top:10px"></p>
