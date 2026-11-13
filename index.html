@@ -362,6 +362,34 @@
   .gl-cnt .v { color: #6a9fbb; }
   .gl-cnt .pm button { background: #e6f1f7; color: #4f86a3; }
   .gl-pad button.ten { background: #e6f1f7; color: #4f86a3; }
+
+  /* ラウンド情報の設定 */
+  .st-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .st-cancel { border: none; background: none; color: #79a694; font-weight: 700; font-size: 14px; }
+  .st-course { background: #fff; border-radius: 18px; padding: 12px 14px; box-shadow: 0 4px 14px rgba(0,0,0,.05); position: relative; overflow: hidden; }
+  .st-course::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: repeating-linear-gradient(90deg, #9dbcaf 0 3px, #79a694 3px 6px); opacity: .7; }
+  .st-course input { width: 100%; border: none; font-size: 18px; font-weight: 700; padding: 4px 0; background: transparent; font-family: var(--maru); color: #3d4441; outline: none; }
+  .st-ok, .st-no { display: inline-block; font-size: 11px; margin: 4px 0 6px; padding: 2px 8px; border-radius: 8px; }
+  .st-ok { background: #e3efe9; color: #4f7d6a; } .st-no { background: #f2f2f2; color: #a2a8a5; }
+  .st-sec { font-size: 12px; font-weight: 700; color: #6a9fbb; letter-spacing: .12em; margin: 16px 4px 6px; }
+  .st-card { background: #fff; border-radius: 18px; box-shadow: 0 4px 14px rgba(0,0,0,.05); overflow: hidden; }
+  .st-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid #f1f1f1; min-height: 54px; width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; text-align: left; font: inherit; color: inherit; }
+  .st-row:last-child { border-bottom: none; }
+  .st-ic { width: 32px; height: 32px; border-radius: 10px; background: #e6f1f7; color: #4f86a3; display: flex; align-items: center; justify-content: center; flex: none; }
+  .st-l { font-size: 14px; flex: none; min-width: 64px; }
+  .st-l em { display: block; font-style: normal; font-size: 9px; color: #fff; background: #f4b097; border-radius: 4px; padding: 0 4px; width: fit-content; margin-top: 2px; }
+  .st-v { flex: 1; display: flex; justify-content: flex-end; min-width: 0; }
+  .st-v input { width: auto; border: none; background: #f5f5f5; border-radius: 10px; padding: 6px 10px; font-size: 15px; box-shadow: none !important; }
+  .st-v .seg { justify-content: flex-end; }
+  .st-txt { color: #a2a8a5; font-size: 14px; }
+  .st-wx { display: flex; gap: 6px; }
+  .st-wx button { width: 44px; height: 36px; border-radius: 10px; border: 1.5px solid #e5e5e5; background: #fff; color: #a2a8a5; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .st-wx button.on { background: #f4b097; border-color: #f4b097; color: #fff; }
+  .st-go { width: 100%; margin-top: 18px; padding: 15px; font-size: 16px; }
+  .st-later { width: 100%; margin-top: 10px; }
+  .st-bag, .gl-clubs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .st-bag button, .gl-clubs button { border: 1.5px solid #dbe8ef; background: #fff; border-radius: 10px; height: 44px; font-family: var(--mincho); font-weight: 700; font-size: 15px; color: #6a8d9e; padding: 0; }
+  .st-bag button.on, .gl-clubs button.on { background: #8fbcd4; border-color: #8fbcd4; color: #fff; }
   .lc { width: 100%; border-collapse: collapse; background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 10px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.05); table-layout: fixed; }
   .lc th { background: #79a694; color: #fff; font-weight: 700; padding: 6px 0; font-size: 11px; }
   .lc th:first-child, .lc td:first-child { width: 44px; font-size: 10px; }
@@ -496,12 +524,16 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13h';
+const APP_VERSION = '2026-11-13i';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
 const PINS = ['奥・左', '奥・中', '奥・右', '中・左', 'センター', '中・右', '手前・左', '手前・中', '手前・右'];
-const WEATHER = ['晴れ', '曇り', '雨', '風強い'];
+const WEATHER = ['晴れ', '曇り', '雨', '雪', '風強い'];
+const WINDS = ['無風', '微風', '中', '強い'];
+const ALL_CLUBS = ['1W', '3W', '4W', '5W', '7W', '9W', 'U3', 'U4', 'U5', 'U6', '4i', '5i', '6i', '7i', '8i', '9i', 'PW', 'AW', 'GW', 'SW', 'LW', 'PT'];
+const DEFAULT_BAG = ['1W', '4W', '7W', 'U6', '6i', '7i', '8i', '9i', 'PW', 'AW', 'SW', 'PT'];
+const myBag = () => (db.settings && db.settings.bag) || DEFAULT_BAG;
 const TEES = ['レギュラー', 'レディース', 'バック', 'フロント'];
 const CLUBS = ['1W', '3W', '4W', '5W', '7W', 'U4', 'U5', 'U6', '5i', '6i', '7i', '8i', '9i', 'PW', 'AW', 'SW'];
 
@@ -536,7 +568,7 @@ async function pull() {
   localStorage.setItem(CACHE_KEY, JSON.stringify(db));
 }
 function normalize(d) {
-  d.rounds ||= []; d.courses ||= []; d.practices ||= []; d.rests ||= [];
+  d.rounds ||= []; d.courses ||= []; d.practices ||= []; d.rests ||= []; d.settings ||= {};
   d.practices.forEach(p => { p.links ||= []; });
   d.rounds.forEach(r => { r.holes ||= []; r.links ||= []; });
   return d;
@@ -1208,7 +1240,67 @@ function openEdit(id) {
   const r = id && db.rounds.find(x => x.id === id);
   draft = r ? JSON.parse(JSON.stringify(r)) : { id: null, date: new Date().toLocaleDateString('sv-SE'), course: '', tee: 'レギュラー', weather: '', holes: blankHoles(), good: '', issue: '', links: [] };
   if (draft.holes.length !== 18) draft.holes = blankHoles();
-  renderEdit();
+  if (r) renderEdit(); else { setupMode = true; renderSetup(); }
+}
+/* ===== ラウンド情報の設定（回る前。GDOの「ラウンド情報設定」と同じ並び） ===== */
+let setupMode = false;
+const SV = d => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const SET_IC = {
+  course: SV('<path d="M6 21V4l10 3.5L6 11"/><path d="M3 21h10"/>'),
+  date: SV('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+  weather: SV('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>'),
+  wind: SV('<path d="M3 9h11a3 3 0 1 0-3-3"/><path d="M3 14h15a3 3 0 1 1-3 3"/>'),
+  nine: SV('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6M9 12h6M9 15h4"/>'),
+  tee: SV('<circle cx="12" cy="6" r="3"/><path d="M12 9v9M9.5 21h5"/>'),
+  green: SV('<ellipse cx="12" cy="18" rx="9" ry="3"/><path d="M13 18V4l6 3-6 3"/>'),
+  bag: SV('<rect x="7" y="8" width="10" height="13" rx="3"/><path d="M9 8V3M12 8V2M15 8V4"/>'),
+};
+const WX_IC = { 晴れ: SV('<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>'),
+  曇り: SV('<path d="M7 18h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.5 1.5A3.3 3.3 0 0 0 7 18z"/>'),
+  雨: SV('<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v7a2 2 0 0 1-4 0"/>'),
+  雪: SV('<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/>') };
+function setupSet(k, v) { draft[k] = v; renderSetupKeep(); }
+function renderSetupKeep() { const y = $('#sheet').scrollTop; renderSetup(); $('#sheet').scrollTop = y; }
+function renderSetup() {
+  const d = draft, c = courseOf(d.course);
+  const nines = (c && c.nines) || (sorted().reverse().find(r => r.course === d.course && r.nines) || {}).nines || ['OUT', 'IN'];
+  d.nines = d.nines && d.nines.length === 2 ? d.nines : [...nines];
+  const front = d.startIn ? d.nines[1] : d.nines[0], back = d.startIn ? d.nines[0] : d.nines[1];
+  const courses = [...new Set([...db.courses.map(x => x.name), ...db.rounds.map(r => r.course)])];
+  const row = (ic, label, body, req) => `<div class="st-row"><span class="st-ic">${SET_IC[ic]}</span><span class="st-l">${label}${req ? '<em>必須</em>' : ''}</span><div class="st-v">${body}</div></div>`;
+  openSheet(`<div class="st">
+    <div class="st-head"><h3>ラウンド情報</h3><button type="button" class="st-cancel" onclick="setupMode=false;closeSheet()">キャンセル</button></div>
+    <div class="st-course"><input list="courses" value="${esc(d.course)}" placeholder="コース名を入れる" onchange="draft.course=this.value;draft.nines=null;fillFromCourse()"><datalist id="courses">${courses.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+      ${c ? `<span class="st-ok">パー・ヤード登録済み</span>` : d.course ? `<span class="st-no">パーは回りながら選べます</span>` : ''}</div>
+    <div class="st-sec">コース情報</div>
+    <div class="st-card">
+      ${row('date', 'ラウンド日', `<input type="date" value="${d.date}" onchange="draft.date=this.value">`)}
+      ${row('weather', '天気', `<div class="st-wx">${['晴れ', '曇り', '雨', '雪'].map(w => `<button type="button" class="${d.weather === w ? 'on' : ''}" onclick="setupSet('weather', draft.weather==='${w}'?'':'${w}')">${WX_IC[w]}</button>`).join('')}</div>`)}
+      ${row('wind', '風', segHTML(WINDS, d.wind || '', "v=>setupSet('wind', draft.wind===v?'':v)", 'sm'))}
+      ${row('nine', '前半コース', segHTML(d.nines, front, "v=>{draft.startIn=(v===draft.nines[1]);renderSetupKeep()}", 'sm'), true)}
+      ${row('nine', '後半コース', `<span class="st-txt">${esc(back)}</span>`)}
+      ${row('tee', 'ティー', segHTML(TEES, d.tee || '', "v=>{draft.tee=v;if(courseOf(draft.course))fillFromCourse();else renderSetupKeep()}", 'sm'), true)}
+      ${row('green', 'グリーン', segHTML(['A', 'B', '1グリーン'], d.green || '', "v=>setupSet('green', draft.green===v?'':v)", 'sm'))}
+    </div>
+    <div class="st-sec">MYギア</div>
+    <div class="st-card"><button type="button" class="st-row st-link" onclick="openBag()"><span class="st-ic">${SET_IC.bag}</span><span class="st-l">クラブセッティング</span><span class="st-v st-txt">${myBag().length}本 ›</span></button></div>
+    <button class="btn primary st-go" onclick="setupMode=false;startLive()">回りながら記録する</button>
+    <button class="btn st-later" onclick="setupMode=false;renderEdit()">あとでまとめて入力する</button>
+  </div>`, true);
+}
+// クラブセッティング：ふだんのバッグ（ラウンド中のクラブ選択に出る）
+let bagDraft = null;
+function openBag() { bagDraft = [...myBag()]; renderBag(); }
+function renderBag() {
+  openSheet(`<div class="st"><div class="st-head"><h3>クラブセッティング</h3><span class="muted">${bagDraft.length}本</span></div>
+    <p class="muted" style="margin:0 0 10px">バッグに入っているクラブを選んでください。ラウンド中のクラブ選択に出ます。</p>
+    <div class="st-bag">${ALL_CLUBS.map(c => `<button type="button" class="${bagDraft.includes(c) ? 'on' : ''}" onclick="bagDraft=bagDraft.includes('${c}')?bagDraft.filter(x=>x!=='${c}'):ALL_CLUBS.filter(x=>bagDraft.includes(x)||x==='${c}');renderBag()">${c}</button>`).join('')}</div>
+    <div class="btns"><button class="btn" onclick="setupMode?renderSetup():renderLive()">もどる</button><button class="btn primary" onclick="saveBag(this)">保存</button></div></div>`, true);
+}
+async function saveBag(btn) {
+  const bag = [...bagDraft], done = busy(btn, '保存中…');
+  const ok = await commit(d => { d.settings = { ...(d.settings || {}), bag }; }, 'クラブセッティングを保存');
+  done(); if (ok) { toast('保存しました'); setupMode ? renderSetup() : renderLive(); }
 }
 function segHTML(list, val, fn, cls = '') {
   return `<div class="seg ${cls}">${list.map(v => `<button type="button" class="${v === val ? 'on' : ''}" onclick="(${fn})(${esc(JSON.stringify(v))})">${esc(v)}</button>`).join('')}</div>`;
@@ -1278,7 +1370,7 @@ function setH(i, k, v, quiet) {
   if (quiet) { const el = $(i < 9 ? '#hs0' : '#hs9'); if (el) el.outerHTML = i < 9 ? halfSum(0, 9) : halfSum(9, 18); }
   else rerender();
 }
-function rerender() { const y = $('#sheet').scrollTop; (liveMode ? renderLive : renderEdit)(); $('#sheet').scrollTop = y; }
+function rerender() { const y = $('#sheet').scrollTop; (liveMode ? renderLive : setupMode ? renderSetup : renderEdit)(); $('#sheet').scrollTop = y; }
 // 登録してあるコース（db.courses）か、前に回ったコースからパー・ヤード・HCを写す
 function courseOf(name) { name = (name || '').trim(); return db.courses.find(c => c.name === name || (c.aliases || []).includes(name)); }
 function fillFromCourse() {
@@ -1364,7 +1456,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pushL
 function startLive() {
   if (!draft.course.trim()) { toast('先にコースを入れてください'); return; }
   draft.live = true; liveMode = true;
-  liveIdx = draft.holes.findIndex(h => h.score == null); if (liveIdx < 0) liveIdx = 0;
+  liveIdx = holeOrder().find(k => draft.holes[k].score == null) ?? holeOrder()[0];
   saveLiveLocal(); renderLive(); $('#sheet').scrollTop = 0;
 }
 function resumeLive() {
@@ -1402,7 +1494,7 @@ const TEE_IC = {
   on: tic('<ellipse cx="14" cy="18" rx="10" ry="3.5"/><path d="M15 18V3l6 3-6 3"/>'),
 };
 const nineName = (k) => (draft.nines && draft.nines[k]) || (k ? 'IN' : 'OUT');
-const holeLabel = i => `${i < 9 ? '前半' : '後半'}`;
+const holeLabel = i => ((i < 9) !== !!draft.startIn ? '前半' : '後半');
 function holeOrder() { return draft.startIn ? [...Array(9).keys()].map(x => x + 9).concat([...Array(9).keys()]) : [...Array(18).keys()]; }
 function keyPress(n) {
   const i = liveIdx;
@@ -1417,6 +1509,7 @@ function keyPress(n) {
 function setField(f) { liveField = f; liveTen = false; renderLive(); }
 function setPar(i, n) { draft.holes[i].par = n; saveLiveLocal(); renderLive(); }
 function cyclePar(i) { const h = draft.holes[i]; h.par = h.par === 3 ? 4 : h.par === 4 ? 5 : 3; saveLiveLocal(); renderLive(); }
+function setClub(i, c) { const h = draft.holes[i]; if (h.club === c) delete h.club; else h.club = c; saveLiveLocal(); renderLive(); }
 function setDir(i, v) { const h = draft.holes[i]; if (h.dir === v) delete h.dir; else h.dir = v; saveLiveLocal(); renderLive(); }
 function count(i, k, d) { const h = draft.holes[i]; const v = Math.max(0, (h[k] || 0) + d); if (v) h[k] = v; else delete h[k]; saveLiveLocal(); renderLive(); }
 function holeChip(k) {
@@ -1447,6 +1540,7 @@ function renderLive() {
     <div class="gl-pad">${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" class="${n === 0 ? 'zero' : ''}" style="grid-area:k${n}" onclick="keyPress(${n})">${n}</button>`).join('')}<button type="button" class="ten ${liveTen ? 'on' : ''}" style="grid-area:ten" onclick="keyPress('ten')">10<small>+</small></button></div>
     <div class="gl-sec">ティショット</div>
     <div class="gl-tee" style="grid-template-columns:repeat(${tee.length},1fr)">${tee.map(([v, l, ic]) => `<button type="button" class="${h.dir === v ? 'on' : ''}" onclick="setDir(${i},'${v}')"><span>${ic}</span>${l}</button>`).join('')}</div>
+    ${h.dir || h.club ? `<div class="gl-sec" style="margin-top:12px">使用クラブ</div><div class="gl-clubs">${myBag().filter(c => c !== 'PT').map(c => `<button type="button" class="${h.club === c ? 'on' : ''}" onclick="setClub(${i},'${c}')">${c}</button>`).join('')}</div>` : ''}
     <div class="gl-cnt">${[['ob', 'OB数'], ['bunker', 'バンカー'], ['pen', 'ペナルティ']].map(([k, l]) => `<div><div class="l">${l}</div><div class="v"><b>${h[k] || 0}</b>回</div><div class="pm"><button type="button" onclick="count(${i},'${k}',-1)">−</button><button type="button" onclick="count(${i},'${k}',1)">＋</button></div></div>`).join('')}</div>
     <details class="gl-memo" ${h.memo ? 'open' : ''}><summary>メモ</summary><textarea oninput="setH(${i},'memo',this.value,true)" placeholder="風、ライ、狙い、気づいたこと">${esc(h.memo || '')}</textarea></details>
     <div class="gl-bottom"><button type="button" class="gl-card" onclick="openLiveCard()">スコアカード</button></div>
