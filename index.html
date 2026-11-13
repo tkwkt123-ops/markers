@@ -496,7 +496,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13g';
+const APP_VERSION = '2026-11-13h';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1398,7 +1398,7 @@ const TEE_IC = {
   short: tic('<path d="M14 3v17"/><path d="M8 14l6 6 6-6"/>'),
   left: tic('<path d="M19 21c0-8-3-13-12-14"/><path d="M11 3L7 7l4 4"/>'),
   right: tic('<path d="M9 21c0-8 3-13 12-14"/><path d="M17 3l4 4-4 4"/>'),
-  fw: tic('<circle cx="14" cy="12" r="8.5"/><circle cx="14" cy="12" r="3" fill="currentColor"/>'),
+  fw: tic('<circle cx="14" cy="12" r="9"/><circle cx="14" cy="12" r="4.5"/>'),
   on: tic('<ellipse cx="14" cy="18" rx="10" ry="3.5"/><path d="M15 18V3l6 3-6 3"/>'),
 };
 const nineName = (k) => (draft.nines && draft.nines[k]) || (k ? 'IN' : 'OUT');
