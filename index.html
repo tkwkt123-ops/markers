@@ -484,7 +484,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13c';
+const APP_VERSION = '2026-11-13d';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1203,7 +1203,7 @@ function segHTML(list, val, fn, cls = '') {
 }
 function holeHTML(h, i) {
   const par = h.par;
-  const dirs = par === 3 ? ['◯', '左', '右', '手前', '奥'] : ['◯', '左', '右'];
+  const dirs = ['◯', '左', '右', '手前', '奥'];
   return `<div class="hole">
     <div class="top">
       <span class="no">${h.no}</span>
@@ -1409,8 +1409,7 @@ function renderLive() {
   const sc = sum(done.map(x => x.score)), pt = sum(done.filter(x => x.putts != null).map(x => x.putts));
   const over = done.length && done.every(x => x.par) ? sc - sum(done.map(x => x.par)) : null;
   const halves = draft.startIn ? [9, 0] : [0, 9];
-  const tee = h.par === 3 ? [['奥', 'オーバー', '↑'], ['左', '左', '↖'], ['◯', 'ワンオン', '◎'], ['右', '右', '↗'], ['手前', 'ショート', '↓']]
-                          : [['左', '左', '↖'], ['◯', 'FWキープ', '◎'], ['右', '右', '↗']];
+  const tee = [['奥', 'オーバー', '↑'], ['左', '左', '↖'], ['◯', h.par === 3 ? 'ワンオン' : 'FWキープ', '◎'], ['右', '右', '↗'], ['手前', 'ショート', '↓']];
   openSheet(`<div class="form gl">
     <div class="gl-top"><div><b>${esc(shortCourse(draft.course))}</b><span class="muted">${draft.date.replace(/-/g, '/')}</span></div></div>
     <div class="gl-strip" id="gl-strip">${halves.map(st => `<span class="gl-lab">${esc(nineName(st ? 1 : 0))}</span>${[...Array(9).keys()].map(x => holeChip(st + x)).join('')}`).join('')}</div>
