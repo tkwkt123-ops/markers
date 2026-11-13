@@ -382,6 +382,7 @@
   .st-v input { width: auto; border: none; background: #f5f5f5; border-radius: 10px; padding: 6px 10px; font-size: 15px; box-shadow: none !important; }
   .st-v .seg { justify-content: flex-end; }
   .st-txt { color: #a2a8a5; font-size: 14px; }
+  .st-sel { width: auto !important; min-width: 96px; border: none !important; background: #f5f5f5 !important; border-radius: 10px !important; padding: 7px 12px !important; font-size: 15px !important; font-weight: 700; color: #4f7d6a !important; box-shadow: none !important; }
   .st-wx { display: flex; gap: 6px; }
   .st-wx button { width: 44px; height: 36px; border-radius: 10px; border: 1.5px solid #e5e5e5; background: #fff; color: #a2a8a5; display: flex; align-items: center; justify-content: center; padding: 0; }
   .st-wx button.on { background: #f4b097; border-color: #f4b097; color: #fff; }
@@ -524,7 +525,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13k';
+const APP_VERSION = '2026-11-13l';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1259,6 +1260,19 @@ const WX_IC = { 晴れ: SV('<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M
   曇り: SV('<path d="M7 18h10a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.5 1.5A3.3 3.3 0 0 0 7 18z"/>'),
   雨: SV('<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v7a2 2 0 0 1-4 0"/>'),
   雪: SV('<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/>') };
+// 前半・後半のコースを選ぶ。登録コースの順番と逆ならINスタート扱い（パーの並びを保つ）
+function nineSelect(which, val, opts) {
+  return `<select class="st-sel" onchange="setNine('${which}', this.value)">${opts.map(o => `<option ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+}
+function setNine(which, v) {
+  const d = draft, c = courseOf(d.course), base = (c && c.nines) || null;
+  if (!d.nines || d.nines.length !== 2) d.nines = base ? [...base] : ['OUT', 'IN'];
+  let front = d.startIn ? d.nines[1] : d.nines[0], back = d.startIn ? d.nines[0] : d.nines[1];
+  if (which === 'front') { if (v === back) back = front; front = v; } else { if (v === front) front = back; back = v; }
+  if (base && front === base[1] && back === base[0]) { d.nines = [...base]; d.startIn = true; }
+  else { d.nines = [front, back]; d.startIn = false; }
+  rerender();
+}
 function setupSet(k, v) { draft[k] = v; renderSetupKeep(); }
 function renderSetupKeep() { rerender(); }
 function setupFields() {
@@ -1266,17 +1280,18 @@ function setupFields() {
   const nines = (c && c.nines) || (sorted().reverse().find(r => r.course === d.course && r.nines) || {}).nines || ['OUT', 'IN'];
   d.nines = d.nines && d.nines.length === 2 ? d.nines : [...nines];
   const front = d.startIn ? d.nines[1] : d.nines[0], back = d.startIn ? d.nines[0] : d.nines[1];
+  const nineOpts = [...new Set([...nines, ...d.nines, 'OUT', 'IN', '東', '西', '南', '北', '中'])];
   const courses = [...new Set([...db.courses.map(x => x.name), ...db.rounds.map(r => r.course)])];
   const row = (ic, label, body, req) => `<div class="st-row"><span class="st-ic">${SET_IC[ic]}</span><span class="st-l">${label}${req ? '<em>必須</em>' : ''}</span><div class="st-v">${body}</div></div>`;
-  return `    <div class="st-course"><input list="courses" value="${esc(d.course)}" placeholder="コース名を入れる" onchange="draft.course=this.value;draft.nines=null;fillFromCourse()"><datalist id="courses">${courses.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+  return `    <div class="st-course"><input list="courses" value="${esc(d.course)}" placeholder="コース名を入れる" onchange="draft.course=this.value;draft.nines=null;fillFromCourse();rerender()"><datalist id="courses">${courses.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
       ${c ? `<span class="st-ok">パー・ヤード登録済み</span>` : d.course ? `<span class="st-no">パーは回りながら選べます</span>` : ''}</div>
     <div class="st-sec">コース情報</div>
     <div class="st-card">
       ${row('date', 'ラウンド日', `<input type="date" value="${d.date}" onchange="draft.date=this.value">`)}
       ${row('weather', '天気', `<div class="st-wx">${['晴れ', '曇り', '雨', '雪'].map(w => `<button type="button" class="${d.weather === w ? 'on' : ''}" onclick="setupSet('weather', draft.weather==='${w}'?'':'${w}')">${WX_IC[w]}</button>`).join('')}</div>`)}
       ${row('wind', '風', segHTML(WINDS, d.wind || '', "v=>setupSet('wind', draft.wind===v?'':v)", 'sm'))}
-      ${row('nine', '前半コース', segHTML(d.nines, front, "v=>{draft.startIn=(v===draft.nines[1]);renderSetupKeep()}", 'sm'), true)}
-      ${row('nine', '後半コース', `<span class="st-txt">${esc(back)}</span>`)}
+      ${row('nine', '前半コース', nineSelect('front', front, nineOpts), true)}
+      ${row('nine', '後半コース', nineSelect('back', back, nineOpts), true)}
       ${row('tee', 'ティー', segHTML(TEES, d.tee || '', "v=>{draft.tee=v;if(courseOf(draft.course))fillFromCourse();else renderSetupKeep()}", 'sm'), true)}
     </div>
     <div class="st-sec">MYギア</div>
