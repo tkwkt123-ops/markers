@@ -525,7 +525,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13l';
+const APP_VERSION = '2026-11-13m';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1268,10 +1268,11 @@ function setNine(which, v) {
   const d = draft, c = courseOf(d.course), base = (c && c.nines) || null;
   if (!d.nines || d.nines.length !== 2) d.nines = base ? [...base] : ['OUT', 'IN'];
   let front = d.startIn ? d.nines[1] : d.nines[0], back = d.startIn ? d.nines[0] : d.nines[1];
-  if (which === 'front') { if (v === back) back = front; front = v; } else { if (v === front) front = back; back = v; }
+  // 前半を選ぶと後半は入れ替え。後半は前半と同じコースも選べる（OUT・OUTなど）
+  if (which === 'front') { if (v === back && front !== back) back = front; front = v; } else back = v;
   if (base && front === base[1] && back === base[0]) { d.nines = [...base]; d.startIn = true; }
   else { d.nines = [front, back]; d.startIn = false; }
-  rerender();
+  if (c) fillFromCourse(); else rerender();
 }
 function setupSet(k, v) { draft[k] = v; renderSetupKeep(); }
 function renderSetupKeep() { rerender(); }
@@ -1388,8 +1389,9 @@ function fillFromCourse() {
   const c = courseOf(draft.course);
   if (c) {
     draft.course = c.name;
-    const yd = c.yards[draft.tee] || c.yards['レギュラー'];
-    draft.holes.forEach((h, i) => { h.par = c.par[i]; if (c.hc) h.hc = c.hc[i]; if (yd) h.yd = yd[i]; });
+    const yd = c.yards[draft.tee] || c.yards['レギュラー'] || Object.values(c.yards)[0];
+    const src = half => { const n = draft.nines && draft.nines[half], k = c.nines ? c.nines.indexOf(n) : -1; return (k >= 0 ? k : half) * 9; };
+    draft.holes.forEach((h, i) => { const j = src(i < 9 ? 0 : 1) + (i % 9); h.par = c.par[j]; if (c.hc) h.hc = c.hc[j]; if (yd) h.yd = yd[j]; });
     if (c.layout) draft.layout = c.layout;
     rerender(); toast(`${c.name}のデータを入れました`); return;
   }
