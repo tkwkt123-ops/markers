@@ -524,7 +524,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13i';
+const APP_VERSION = '2026-11-13j';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1280,7 +1280,6 @@ function renderSetup() {
       ${row('nine', '前半コース', segHTML(d.nines, front, "v=>{draft.startIn=(v===draft.nines[1]);renderSetupKeep()}", 'sm'), true)}
       ${row('nine', '後半コース', `<span class="st-txt">${esc(back)}</span>`)}
       ${row('tee', 'ティー', segHTML(TEES, d.tee || '', "v=>{draft.tee=v;if(courseOf(draft.course))fillFromCourse();else renderSetupKeep()}", 'sm'), true)}
-      ${row('green', 'グリーン', segHTML(['A', 'B', '1グリーン'], d.green || '', "v=>setupSet('green', draft.green===v?'':v)", 'sm'))}
     </div>
     <div class="st-sec">MYギア</div>
     <div class="st-card"><button type="button" class="st-row st-link" onclick="openBag()"><span class="st-ic">${SET_IC.bag}</span><span class="st-l">クラブセッティング</span><span class="st-v st-txt">${myBag().length}本 ›</span></button></div>
@@ -1289,18 +1288,18 @@ function renderSetup() {
   </div>`, true);
 }
 // クラブセッティング：ふだんのバッグ（ラウンド中のクラブ選択に出る）
-let bagDraft = null;
-function openBag() { bagDraft = [...myBag()]; renderBag(); }
+let bagDraft = null, bagBack = null;
+function openBag(back) { bagBack = back || (setupMode ? renderSetup : renderLive); bagDraft = [...myBag()]; renderBag(); }
 function renderBag() {
   openSheet(`<div class="st"><div class="st-head"><h3>クラブセッティング</h3><span class="muted">${bagDraft.length}本</span></div>
     <p class="muted" style="margin:0 0 10px">バッグに入っているクラブを選んでください。ラウンド中のクラブ選択に出ます。</p>
     <div class="st-bag">${ALL_CLUBS.map(c => `<button type="button" class="${bagDraft.includes(c) ? 'on' : ''}" onclick="bagDraft=bagDraft.includes('${c}')?bagDraft.filter(x=>x!=='${c}'):ALL_CLUBS.filter(x=>bagDraft.includes(x)||x==='${c}');renderBag()">${c}</button>`).join('')}</div>
-    <div class="btns"><button class="btn" onclick="setupMode?renderSetup():renderLive()">もどる</button><button class="btn primary" onclick="saveBag(this)">保存</button></div></div>`, true);
+    <div class="btns"><button class="btn" onclick="bagBack()">もどる</button><button class="btn primary" onclick="saveBag(this)">保存</button></div></div>`, true);
 }
 async function saveBag(btn) {
   const bag = [...bagDraft], done = busy(btn, '保存中…');
   const ok = await commit(d => { d.settings = { ...(d.settings || {}), bag }; }, 'クラブセッティングを保存');
-  done(); if (ok) { toast('保存しました'); setupMode ? renderSetup() : renderLive(); }
+  done(); if (ok) { toast('保存しました'); bagBack(); }
 }
 function segHTML(list, val, fn, cls = '') {
   return `<div class="seg ${cls}">${list.map(v => `<button type="button" class="${v === val ? 'on' : ''}" onclick="(${fn})(${esc(JSON.stringify(v))})">${esc(v)}</button>`).join('')}</div>`;
@@ -1730,7 +1729,11 @@ async function pushHTML() {
     <p class="muted" style="line-height:1.7;margin:6px 0 10px">その日に練習もラウンドも記録がなければ、22時ごろにお知らせします。</p>
     <button class="btn ${st === 'on' ? '' : 'primary'}" style="width:100%" onclick="togglePush(this)">${st === 'on' ? '通知をやめる' : '通知を受け取る'}</button></div>`;
 }
-async function openSettings() { openSheet((await pushHTML()) + setupHTML(true)); }
+async function openSettings() {
+  openSheet((await pushHTML()) + `<div class="card" style="margin:0 0 14px"><h4>クラブセッティング</h4>
+    <p class="muted" style="line-height:1.7;margin:6px 0 10px">${myBag().join('・')}</p>
+    <button class="btn" style="width:100%" onclick="openBag(openSettings)">変更する</button></div>` + setupHTML(true));
+}
 async function saveSettings() {
   busy(document.querySelector('#sheet .btn.primary, #setup .btn.primary'), 'つないでいます…');
   cfg.token = $('#st-token').value.trim();
