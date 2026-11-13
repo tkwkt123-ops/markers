@@ -282,6 +282,68 @@
   .photo-view.on { display: flex; }
   .photo-view img { max-width: 100%; max-height: 100%; }
   .links a { display: inline-block; margin: 4px 10px 0 0; font-size: 13px; }
+
+  /* ===== ラウンド中の入力（GDO風） ===== */
+  .gl-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .gl-top b { display: block; font-size: 16px; }
+  .gl-top .muted { font-size: 11px; }
+  .gl-card { border: none; background: #79a694; color: #fff; border-radius: 12px; padding: 9px 14px; font-weight: 700; font-size: 13px; box-shadow: 0 6px 14px rgba(121,166,148,.35); }
+  .gl-nine { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .gl-nine > span { width: 30px; font-size: 10px; font-weight: 700; color: #a2a8a5; flex: none; }
+  .gl-nine > div { flex: 1; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+  .hc { position: relative; border: 1.5px dashed #cfd6d2; background: transparent; border-radius: 10px; padding: 4px 0 3px; display: flex; flex-direction: column; align-items: center; line-height: 1.1; color: #a2a8a5; }
+  .hc b { font-size: 15px; font-family: var(--mincho); }
+  .hc small { font-size: 9px; min-height: 10px; }
+  .hc.done { border: 1.5px solid transparent; background: #e3efe9; color: #4f7d6a; }
+  .hc.done i { position: absolute; top: 3px; right: 3px; width: 6px; height: 6px; border-radius: 50%; background: #b9c6c0; }
+  .hc.done i.e { background: #79a694; } .hc.done i.u { background: #ea9f86; }
+  .hc.on { background: #fff; border: 2px solid #f4b097; color: #3d4441; box-shadow: 0 4px 12px rgba(244,176,151,.35); }
+  .hc.on.done { background: #fff; }
+  .gl-info { display: flex; align-items: center; justify-content: space-between; background: #fff; border-radius: 16px; padding: 10px 14px; margin: 8px 0; box-shadow: 0 4px 14px rgba(0,0,0,.05); }
+  .gl-hole { font-size: 13px; font-weight: 700; color: #a2a8a5; }
+  .gl-hole b { font-size: 22px; color: #fff; background: #ea9f86; border-radius: 8px; padding: 1px 8px; margin-left: 6px; font-family: var(--mincho); }
+  .gl-info .yd { font-family: var(--mincho); font-size: 24px; }
+  .gl-par { border: 2px solid #79a694; background: #fff; border-radius: 8px; padding: 2px 4px 2px 8px; font-weight: 700; font-size: 13px; color: #3d4441; }
+  .gl-par b { background: #79a694; color: #fff; border-radius: 4px; padding: 0 7px; margin-left: 6px; font-family: var(--mincho); font-size: 17px; }
+  .gl-panel { display: flex; gap: 10px; align-items: stretch; background: #fff; border-radius: 18px; padding: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.05); }
+  .gl-total { flex: 1; display: flex; align-items: baseline; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .gl-total b { font-family: var(--mincho); font-size: 44px; color: #79a694; }
+  .gl-total span { font-family: var(--mincho); font-size: 24px; color: #79a694; }
+  .gl-total em { font-style: normal; color: #79a694; font-size: 15px; width: 100%; text-align: center; }
+  .gl-fields { flex: 1.2; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .gl-f { border: 2.5px solid transparent; background: #f2f2f2; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 0; min-height: 84px; }
+  .gl-f small { font-size: 10px; font-weight: 700; color: #a2a8a5; }
+  .gl-f b { font-family: var(--mincho); font-size: 38px; line-height: 1.1; min-height: 42px; }
+  .gl-f b.pop { animation: pop .28s ease; display: inline-block; }
+  .gl-f.on { border-color: #f4b097; background: #fff; box-shadow: 0 4px 12px rgba(244,176,151,.3); }
+  .gl-pad { display: grid; gap: 6px; margin: 10px 0 4px; grid-template-columns: repeat(5, 1fr) 1.15fr; grid-template-areas: "k0 k1 k2 k3 k4 ten" "k5 k6 k7 k8 k9 ten"; }
+  .gl-pad button { border: none; border-radius: 14px; background: #e3efe9; color: #4f7d6a; font-family: var(--mincho); font-size: 30px; font-weight: 700; height: 58px; }
+  .gl-pad button.zero { background: #79a694; color: #fff; }
+  .gl-pad button.ten { height: auto; font-size: 26px; background: #d2e5db; }
+  .gl-pad button.ten small { font-size: 16px; }
+  .gl-pad button.ten.on { background: #f4b097; color: #fff; }
+  .gl-sec { font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #a2a8a5; margin: 12px 2px 6px; }
+  .gl-tee { display: grid; gap: 6px; }
+  .gl-tee button { border: 1.5px solid #dfe7e3; background: #fff; border-radius: 12px; padding: 8px 2px 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: #a2a8a5; }
+  .gl-tee button span { font-size: 22px; line-height: 1; }
+  .gl-tee button.on { background: #79a694; border-color: #79a694; color: #fff; }
+  .gl-tee button.on::before { content: none; }
+  .gl-cnt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .gl-cnt > div { background: #fff; border-radius: 16px; padding: 8px; text-align: center; box-shadow: 0 4px 14px rgba(0,0,0,.05); }
+  .gl-cnt .l { font-size: 12px; font-weight: 700; }
+  .gl-cnt .v { color: #79a694; font-size: 12px; } .gl-cnt .v b { font-family: var(--mincho); font-size: 28px; margin-right: 2px; }
+  .gl-cnt .pm { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
+  .gl-cnt .pm button { border: none; background: #e3efe9; color: #4f7d6a; border-radius: 10px; height: 40px; font-size: 24px; font-weight: 700; }
+  .gl-memo { margin-top: 12px; } .gl-memo summary { font-size: 12px; color: #a2a8a5; }
+  .gl-memo textarea { margin-top: 6px; min-height: 60px; }
+  .lc { width: 100%; border-collapse: collapse; background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 10px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.05); table-layout: fixed; }
+  .lc th { background: #79a694; color: #fff; font-weight: 700; padding: 6px 0; font-size: 11px; }
+  .lc th:first-child, .lc td:first-child { width: 44px; font-size: 10px; }
+  .lc th.cur { background: #f4b097; }
+  .lc td { text-align: center; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+  .lc tr.s td { padding: 4px 0; }
+  .lc .mk { width: 24px; height: 24px; font-size: 14px; }
+  .lc .empty { color: #d6dad8; }
   #setup { display: none; }
   html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
   body { padding-bottom: 0 !important; min-height: 0 !important; }
@@ -408,7 +470,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-12a';
+const APP_VERSION = '2026-11-13a';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1301,42 +1363,81 @@ function goHole(k) {
   liveIdx = k; saveLiveLocal(); pushLive(); renderLive(); $('#sheet').scrollTop = 0;
   const f = $('#sheet-body .form'); if (f) { f.classList.add(dir); }
 }
+// ===== ラウンド中の入力（GDOのスコア入力と同じ並び。色はMarkersのまま） =====
+let liveField = 'score', liveTen = false;
+const nineName = (k) => (draft.nines && draft.nines[k]) || (k ? 'IN' : 'OUT');
+const holeLabel = i => `${i < 9 ? '前半' : '後半'}`;
+function holeOrder() { return draft.startIn ? [...Array(9).keys()].map(x => x + 9).concat([...Array(9).keys()]) : [...Array(18).keys()]; }
+function keyPress(n) {
+  const i = liveIdx;
+  if (n === 'ten') { liveTen = !liveTen; renderLive(); return; }
+  let v = n + (liveTen ? 10 : 0); liveTen = false;
+  if (liveField === 'score' && v === 0) return;
+  lastBump = liveField;
+  draft.holes[i][liveField] = v;
+  if (liveField === 'score') liveField = 'putts';
+  saveLiveLocal(); renderLive();
+}
+function setField(f) { liveField = f; liveTen = false; renderLive(); }
+function cyclePar(i) { const h = draft.holes[i]; h.par = h.par === 3 ? 4 : h.par === 4 ? 5 : 3; saveLiveLocal(); renderLive(); }
+function setDir(i, v) { const h = draft.holes[i]; if (h.dir === v) delete h.dir; else h.dir = v; saveLiveLocal(); renderLive(); }
+function count(i, k, d) { const h = draft.holes[i]; const v = Math.max(0, (h[k] || 0) + d); if (v) h[k] = v; else delete h[k]; saveLiveLocal(); renderLive(); }
+function holeChip(k) {
+  const h = draft.holes[k], on = k === liveIdx, done = h.score != null;
+  const d = done && h.par ? h.score - h.par : null;
+  return `<button type="button" class="hc ${on ? 'on' : ''} ${done ? 'done' : ''}" onclick="liveField='score';goHole(${k})">
+    <b>${(k % 9) + 1}</b><small>${done ? h.score + (h.putts != null ? '/' + h.putts : '') : h.par ? 'P' + h.par : ''}</small>${done && d != null ? `<i class="${d < 0 ? 'u' : d === 0 ? 'e' : ''}"></i>` : ''}</button>`;
+}
 function renderLive() {
   const i = liveIdx, h = draft.holes[i];
   const done = draft.holes.filter(x => x.score != null);
-  const sc = sum(done.map(x => x.score));
+  const sc = sum(done.map(x => x.score)), pt = sum(done.filter(x => x.putts != null).map(x => x.putts));
   const over = done.length && done.every(x => x.par) ? sc - sum(done.map(x => x.par)) : null;
-  openSheet(`<div class="form">
-    <div class="live-top"><span class="muted">${esc(shortCourse(draft.course))}　${draft.date.replace(/-/g, '/')}</span><span class="muted">ここまで <b style="font-family:var(--mincho);font-size:15px;color:var(--ink)">${done.length ? sc : '–'}</b>${over != null ? `（${over >= 0 ? '+' : ''}${over}）` : ''}</span></div>
-    <div class="live-holes">${draft.holes.map((x, k) => `<button type="button" class="${k === i ? 'on' : ''} ${x.score != null ? 'done' : ''}" onclick="goHole(${k})">${k + 1}</button>`).join('')}</div>
-    <div class="live-head">
-      <div><div class="muted">${i < 9 ? 'OUT' : 'IN'}</div><h2>Hole ${h.no}</h2></div>
-      <div class="r">${segHTML([3, 4, 5], h.par, `v=>setH(${i},'par',v)`, 'sm')}<div class="muted" style="margin-top:4px">${h.yd ? h.yd + 'Y' : ''}${h.hc ? '　HC ' + h.hc : ''}</div></div>
+  const halves = draft.startIn ? [9, 0] : [0, 9];
+  const tee = h.par === 3 ? [['奥', 'オーバー', '↑'], ['左', '左', '↖'], ['◯', 'ワンオン', '◎'], ['右', '右', '↗'], ['手前', 'ショート', '↓']]
+                          : [['左', '左', '↖'], ['◯', 'FWキープ', '◎'], ['右', '右', '↗']];
+  openSheet(`<div class="form gl">
+    <div class="gl-top"><div><b>${esc(shortCourse(draft.course))}</b><span class="muted">${draft.date.replace(/-/g, '/')}</span></div>
+      <button type="button" class="gl-card" onclick="openLiveCard()">スコアカード</button></div>
+    ${halves.map(st => `<div class="gl-nine"><span>${esc(nineName(st ? 1 : 0))}</span><div>${[...Array(9).keys()].map(x => holeChip(st + x)).join('')}</div></div>`).join('')}
+    <div class="gl-info"><span class="gl-hole">${holeLabel(i)}<b>${(i % 9) + 1}H</b></span>
+      <span>${h.yd ? `<b class="yd">${h.yd}</b>y` : ''}</span>
+      <button type="button" class="gl-par" onclick="cyclePar(${i})">PAR<b>${h.par || '?'}</b></button>
+      <span class="muted">${h.hc ? 'HDCP' + h.hc : ''}</span></div>
+    <div class="gl-panel">
+      <div class="gl-total"><b>${done.length ? sc : '–'}</b><span>${done.length ? pt : ''}</span><em>${over != null ? `(${over >= 0 ? '+' : ''}${over})` : ''}</em></div>
+      <div class="gl-fields">
+        <button type="button" class="gl-f ${liveField === 'score' ? 'on' : ''}" data-k="score" onclick="setField('score')"><small>スコア</small><b>${h.score ?? ''}</b></button>
+        <button type="button" class="gl-f ${liveField === 'putts' ? 'on' : ''}" data-k="putts" onclick="setField('putts')"><small>PUTT</small><b>${h.putts ?? ''}</b></button>
+      </div>
     </div>
-    ${draft.layout ? `<a class="layout-link" href="${esc(draft.layout)}" target="_blank">ホールのレイアウトを見る（楽天GORA）↗</a>` : ''}
-    <div class="live-grid">
-      <div><label>スコア</label>${stepper(i, 'score', h.score)}</div>
-      <div><label>パット</label>${stepper(i, 'putts', h.putts)}</div>
-    </div>
-    <label>1打目</label>
-    <div class="two-l"><select onchange="setH(${i},'club',this.value,true)"><option value=""></option>${CLUBS.map(c => `<option ${h.club === c ? 'selected' : ''}>${c}</option>`).join('')}</select>${segHTML(h.par === 3 ? ['◯', '左', '右', '手前', '奥'] : ['◯', '左', '右'], h.dir, `v=>setH(${i},'dir',v===draft.holes[${i}].dir?undefined:v)`)}</div>
-    <div class="muted" style="margin-top:4px">${h.par === 3 ? '◯＝1オン、左・右・手前・奥＝外した方向' : '◯＝フェアウェイキープ、左・右＝外した方向'}</div>
-    <div class="live-grid3">
-      <div><label>OB</label>${stepper(i, 'ob', h.ob || 0, true)}</div>
-      <div><label>バンカー</label>${stepper(i, 'bunker', h.bunker || 0, true)}</div>
-      <div><label>ペナ</label>${stepper(i, 'pen', h.pen || 0, true)}</div>
-    </div>
-    <label>ピン位置（上が奥）</label>
-    <div class="pin-wrap">${pinHTML(i, h.pin, true)}</div>
-    <label>メモ</label><textarea style="min-height:70px" oninput="setH(${i},'memo',this.value,true)" placeholder="風、ライ、狙い、気づいたこと">${esc(h.memo || '')}</textarea>
-    <div class="btns"><button class="btn" onclick="goHole(${i - 1})" ${i === 0 ? 'disabled' : ''}>← 前</button>${i < 17 ? `<button class="btn primary" onclick="goHole(${i + 1})">次のホール →</button>` : `<button class="btn primary" onclick="liveMode=false;renderEdit();toast('振り返りを書いて保存してください')">上がり</button>`}</div>
+    <div class="gl-pad">${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" class="${n === 0 ? 'zero' : ''}" style="grid-area:k${n}" onclick="keyPress(${n})">${n}</button>`).join('')}<button type="button" class="ten ${liveTen ? 'on' : ''}" style="grid-area:ten" onclick="keyPress('ten')">10<small>+</small></button></div>
+    <div class="gl-sec">ティショット</div>
+    <div class="gl-tee" style="grid-template-columns:repeat(${tee.length},1fr)">${tee.map(([v, l, ic]) => `<button type="button" class="${h.dir === v ? 'on' : ''}" onclick="setDir(${i},'${v}')"><span>${ic}</span>${l}</button>`).join('')}</div>
+    <div class="gl-cnt">${[['ob', 'OB数'], ['bunker', 'バンカー'], ['pen', 'ペナルティ']].map(([k, l]) => `<div><div class="l">${l}</div><div class="v"><b>${h[k] || 0}</b>回</div><div class="pm"><button type="button" onclick="count(${i},'${k}',-1)">−</button><button type="button" onclick="count(${i},'${k}',1)">＋</button></div></div>`).join('')}</div>
+    <details class="gl-memo" ${h.memo ? 'open' : ''}><summary>メモ</summary><textarea oninput="setH(${i},'memo',this.value,true)" placeholder="風、ライ、狙い、気づいたこと">${esc(h.memo || '')}</textarea></details>
+    <div class="btns">${(() => { const o = holeOrder(), pos = o.indexOf(i), prev = o[pos - 1], next = o[pos + 1];
+      return `<button class="btn" onclick="liveField='score';goHole(${prev ?? -1})" ${prev == null ? 'disabled' : ''}>← 前</button>${next != null ? `<button class="btn primary" onclick="liveField='score';goHole(${next})">次のホール →</button>` : `<button class="btn primary" onclick="liveMode=false;renderEdit();toast('振り返りを書いて保存してください')">上がり</button>`}`; })()}</div>
+    ${draft.layout ? `<a class="layout-link" href="${esc(draft.layout)}" target="_blank" style="margin-top:10px">コースマップ（楽天GORA）↗</a>` : ''}
     <div class="btns"><button class="btn" onclick="liveMode=false;renderEdit()">全体を見る・振り返りを書く</button></div>
-    <p class="muted" id="live-status" style="text-align:center;margin-top:14px"></p>
-    <p class="muted" style="text-align:center">閉じても、ホームの緑のボタンか＋から続きを開けます。</p>
-    <p style="text-align:center;margin-top:18px"><button class="btn danger" style="font-size:12px;padding:6px 12px" onclick="discardLive()">このラウンドの記録をやめて消す</button></p>
+    <label style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:12px;letter-spacing:0"><input type="checkbox" style="width:auto" ${draft.startIn ? 'checked' : ''} onchange="draft.startIn=this.checked;saveLiveLocal();renderLive()">${esc(nineName(1))}からスタート</label>
+    <p class="muted" id="live-status" style="text-align:center;margin-top:10px"></p>
+    <p style="text-align:center;margin-top:14px"><button class="btn danger" style="font-size:12px;padding:6px 12px" onclick="discardLive()">このラウンドの記録をやめて消す</button></p>
   </div>`, true);
   updateLiveStatus();
-  if (lastBump) { const el = document.querySelector(`[data-k="${lastBump}"] b`); if (el) el.classList.add('pop'); lastBump = null; }
+  if (lastBump) { const el = document.querySelector(`.gl-f[data-k="${lastBump}"] b`); if (el) el.classList.add('pop'); lastBump = null; }
+}
+// ラウンド中のスコアカード（ホールを押すとそこへ）
+function openLiveCard() {
+  const row = (st) => { const H = draft.holes.slice(st, st + 9), tot = k => H.every(x => x[k] != null) ? sum(H.map(x => x[k])) : (H.some(x => x[k] != null) ? sum(H.filter(x => x[k] != null).map(x => x[k])) : '');
+    return `<table class="lc"><tr><th>${esc(nineName(st ? 1 : 0))}</th>${H.map((x, j) => `<th onclick="liveField='score';goHole(${st + j})" class="${st + j === liveIdx ? 'cur' : ''}">${j + 1}</th>`).join('')}<th>計</th></tr>
+      <tr><td>PAR</td>${H.map(x => `<td>${x.par ?? ''}</td>`).join('')}<td>${tot('par')}</td></tr>
+      <tr class="s"><td>スコア</td>${H.map((x, j) => `<td onclick="liveField='score';goHole(${st + j})">${x.score != null ? mark(x) : '<span class="empty">・</span>'}</td>`).join('')}<td><b>${tot('score')}</b></td></tr>
+      <tr><td>PUTT</td>${H.map(x => `<td>${x.putts ?? ''}</td>`).join('')}<td>${tot('putts')}</td></tr></table>`; };
+  const done = draft.holes.filter(x => x.score != null);
+  openSheet(`<div class="gl-top"><div><b>スコアカード</b><span class="muted">${done.length}/18ホール入力済み</span></div><button type="button" class="gl-card" onclick="renderLive()">入力に戻る</button></div>
+    ${(draft.startIn ? [9, 0] : [0, 9]).map(row).join('')}
+    <div class="gl-total" style="justify-content:center;margin-top:8px"><b>${done.length ? sum(done.map(x => x.score)) : '–'}</b><span>${done.filter(x => x.putts != null).length ? sum(done.filter(x => x.putts != null).map(x => x.putts)) : ''}</span></div>`, true);
 }
 async function discardLive() {
   if (!confirm('ラウンド中の入力を全部消します。よろしいですか？')) return;
