@@ -351,6 +351,17 @@
   .gl-cnt .pm button { border: none; background: #e3efe9; color: #4f7d6a; border-radius: 10px; height: 40px; font-size: 24px; font-weight: 700; }
   .gl-memo { margin-top: 12px; } .gl-memo summary { font-size: 12px; color: #a2a8a5; }
   .gl-memo textarea { margin-top: 6px; min-height: 60px; }
+
+  /* 3色目：やわらかいブルー（PUTT・ティショット・OBなどの数） */
+  .gl-f[data-k="putts"].on { border-color: #8fbcd4; box-shadow: 0 4px 12px rgba(143,188,212,.35); }
+  .gl-f[data-k="putts"] small { color: #6a9fbb; }
+  .gl-sec { color: #6a9fbb !important; }
+  .gl-tee button { color: #8fa7b4; border-color: #dbe8ef; }
+  .gl-tee button span { display: flex; height: 24px; align-items: center; }
+  .gl-tee button.on { background: #8fbcd4 !important; border-color: #8fbcd4 !important; color: #fff; box-shadow: 0 4px 12px rgba(143,188,212,.4); }
+  .gl-cnt .v { color: #6a9fbb; }
+  .gl-cnt .pm button { background: #e6f1f7; color: #4f86a3; }
+  .gl-pad button.ten { background: #e6f1f7; color: #4f86a3; }
   .lc { width: 100%; border-collapse: collapse; background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 10px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.05); table-layout: fixed; }
   .lc th { background: #79a694; color: #fff; font-weight: 700; padding: 6px 0; font-size: 11px; }
   .lc th:first-child, .lc td:first-child { width: 44px; font-size: 10px; }
@@ -485,7 +496,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13f';
+const APP_VERSION = '2026-11-13g';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1380,6 +1391,16 @@ function goHole(k) {
 }
 // ===== ラウンド中の入力（GDOのスコア入力と同じ並び。色はMarkersのまま） =====
 let liveField = 'score', liveTen = false;
+// ティショットの線のアイコン（絵文字にならないようにSVGで描く）
+const tic = d => `<svg width="28" height="24" viewBox="0 0 28 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const TEE_IC = {
+  over: tic('<path d="M14 21V4"/><path d="M8 10l6-6 6 6"/>'),
+  short: tic('<path d="M14 3v17"/><path d="M8 14l6 6 6-6"/>'),
+  left: tic('<path d="M19 21c0-8-3-13-12-14"/><path d="M11 3L7 7l4 4"/>'),
+  right: tic('<path d="M9 21c0-8 3-13 12-14"/><path d="M17 3l4 4-4 4"/>'),
+  fw: tic('<circle cx="14" cy="12" r="8.5"/><circle cx="14" cy="12" r="3" fill="currentColor"/>'),
+  on: tic('<ellipse cx="14" cy="18" rx="10" ry="3.5"/><path d="M15 18V3l6 3-6 3"/>'),
+};
 const nineName = (k) => (draft.nines && draft.nines[k]) || (k ? 'IN' : 'OUT');
 const holeLabel = i => `${i < 9 ? '前半' : '後半'}`;
 function holeOrder() { return draft.startIn ? [...Array(9).keys()].map(x => x + 9).concat([...Array(9).keys()]) : [...Array(18).keys()]; }
@@ -1410,7 +1431,7 @@ function renderLive() {
   const sc = sum(done.map(x => x.score)), pt = sum(done.filter(x => x.putts != null).map(x => x.putts));
   const over = done.length && done.every(x => x.par) ? sc - sum(done.map(x => x.par)) : null;
   const halves = draft.startIn ? [9, 0] : [0, 9];
-  const tee = [['奥', 'オーバー', '↑'], ['左', '左', '↖'], ['◯', h.par === 3 ? 'ワンオン' : 'FWキープ', '◎'], ['右', '右', '↗'], ['手前', 'ショート', '↓']];
+  const tee = [['奥', 'オーバー', TEE_IC.over], ['左', '左', TEE_IC.left], ['◯', h.par === 3 ? 'ワンオン' : 'FWキープ', h.par === 3 ? TEE_IC.on : TEE_IC.fw], ['右', '右', TEE_IC.right], ['手前', 'ショート', TEE_IC.short]];
   openSheet(`<div class="form gl">
     <div class="gl-top"><div><b>${esc(shortCourse(draft.course))}</b><span class="muted">${draft.date.replace(/-/g, '/')}</span></div></div>
     <div class="gl-strip" id="gl-strip">${halves.map(st => `<span class="gl-lab">${esc(nineName(st ? 1 : 0))}</span>${[...Array(9).keys()].map(x => holeChip(st + x)).join('')}`).join('')}</div>
