@@ -288,6 +288,20 @@
   .gl-top b { display: block; font-size: 16px; }
   .gl-top .muted { font-size: 11px; }
   .gl-card { border: none; background: #79a694; color: #fff; border-radius: 12px; padding: 9px 14px; font-weight: 700; font-size: 13px; box-shadow: 0 6px 14px rgba(121,166,148,.35); }
+  .gl-strip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px 8px; margin: 0 -2px; align-items: stretch; }
+  .gl-strip::-webkit-scrollbar { display: none; }
+  .gl-strip .hc { flex: none; width: 52px; padding: 6px 0 5px; }
+  .gl-strip .hc b { font-size: 17px; }
+  .gl-strip .hc small { font-size: 10px; }
+  .gl-lab { flex: none; writing-mode: vertical-rl; font-size: 10px; font-weight: 700; color: #a2a8a5; display: flex; align-items: center; justify-content: center; padding: 0 2px; }
+  .gl-sub { font-size: 11px; color: #a2a8a5; margin-top: 4px; }
+  .gl-pars { display: flex; align-items: center; gap: 4px; }
+  .gl-pars small { font-size: 11px; font-weight: 700; color: #a2a8a5; margin-right: 2px; }
+  .gl-pars button { width: 38px; height: 38px; border-radius: 10px; border: 1.5px solid #dfe7e3; background: #fff; font-family: var(--mincho); font-size: 18px; font-weight: 700; color: #a2a8a5; padding: 0; }
+  .gl-pars button.on { background: #79a694; border-color: #79a694; color: #fff; box-shadow: 0 4px 10px rgba(121,166,148,.35); }
+  .gl-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .gl-bottom .gl-card { text-align: center; padding: 14px; font-size: 14px; text-decoration: none; }
+  .gl-card.ghost { background: #fff; color: #79a694; box-shadow: 0 4px 12px rgba(0,0,0,.05); }
   .gl-nine { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
   .gl-nine > span { width: 30px; font-size: 10px; font-weight: 700; color: #a2a8a5; flex: none; }
   .gl-nine > div { flex: 1; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
@@ -470,7 +484,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13a';
+const APP_VERSION = '2026-11-13c';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1379,6 +1393,7 @@ function keyPress(n) {
   saveLiveLocal(); renderLive();
 }
 function setField(f) { liveField = f; liveTen = false; renderLive(); }
+function setPar(i, n) { draft.holes[i].par = n; saveLiveLocal(); renderLive(); }
 function cyclePar(i) { const h = draft.holes[i]; h.par = h.par === 3 ? 4 : h.par === 4 ? 5 : 3; saveLiveLocal(); renderLive(); }
 function setDir(i, v) { const h = draft.holes[i]; if (h.dir === v) delete h.dir; else h.dir = v; saveLiveLocal(); renderLive(); }
 function count(i, k, d) { const h = draft.holes[i]; const v = Math.max(0, (h[k] || 0) + d); if (v) h[k] = v; else delete h[k]; saveLiveLocal(); renderLive(); }
@@ -1397,13 +1412,10 @@ function renderLive() {
   const tee = h.par === 3 ? [['奥', 'オーバー', '↑'], ['左', '左', '↖'], ['◯', 'ワンオン', '◎'], ['右', '右', '↗'], ['手前', 'ショート', '↓']]
                           : [['左', '左', '↖'], ['◯', 'FWキープ', '◎'], ['右', '右', '↗']];
   openSheet(`<div class="form gl">
-    <div class="gl-top"><div><b>${esc(shortCourse(draft.course))}</b><span class="muted">${draft.date.replace(/-/g, '/')}</span></div>
-      <button type="button" class="gl-card" onclick="openLiveCard()">スコアカード</button></div>
-    ${halves.map(st => `<div class="gl-nine"><span>${esc(nineName(st ? 1 : 0))}</span><div>${[...Array(9).keys()].map(x => holeChip(st + x)).join('')}</div></div>`).join('')}
-    <div class="gl-info"><span class="gl-hole">${holeLabel(i)}<b>${(i % 9) + 1}H</b></span>
-      <span>${h.yd ? `<b class="yd">${h.yd}</b>y` : ''}</span>
-      <button type="button" class="gl-par" onclick="cyclePar(${i})">PAR<b>${h.par || '?'}</b></button>
-      <span class="muted">${h.hc ? 'HDCP' + h.hc : ''}</span></div>
+    <div class="gl-top"><div><b>${esc(shortCourse(draft.course))}</b><span class="muted">${draft.date.replace(/-/g, '/')}</span></div></div>
+    <div class="gl-strip" id="gl-strip">${halves.map(st => `<span class="gl-lab">${esc(nineName(st ? 1 : 0))}</span>${[...Array(9).keys()].map(x => holeChip(st + x)).join('')}`).join('')}</div>
+    <div class="gl-info"><div><span class="gl-hole">${holeLabel(i)}<b>${(i % 9) + 1}H</b></span>${h.yd || h.hc ? `<div class="gl-sub">${[h.yd && h.yd + 'y', h.hc && 'HDCP' + h.hc].filter(Boolean).join('・')}</div>` : ''}</div>
+      <span class="gl-pars"><small>PAR</small>${[3, 4, 5].map(n => `<button type="button" class="${h.par === n ? 'on' : ''}" onclick="setPar(${i},${n})">${n}</button>`).join('')}</span></div>
     <div class="gl-panel">
       <div class="gl-total"><b>${done.length ? sc : '–'}</b><span>${done.length ? pt : ''}</span><em>${over != null ? `(${over >= 0 ? '+' : ''}${over})` : ''}</em></div>
       <div class="gl-fields">
@@ -1416,15 +1428,15 @@ function renderLive() {
     <div class="gl-tee" style="grid-template-columns:repeat(${tee.length},1fr)">${tee.map(([v, l, ic]) => `<button type="button" class="${h.dir === v ? 'on' : ''}" onclick="setDir(${i},'${v}')"><span>${ic}</span>${l}</button>`).join('')}</div>
     <div class="gl-cnt">${[['ob', 'OB数'], ['bunker', 'バンカー'], ['pen', 'ペナルティ']].map(([k, l]) => `<div><div class="l">${l}</div><div class="v"><b>${h[k] || 0}</b>回</div><div class="pm"><button type="button" onclick="count(${i},'${k}',-1)">−</button><button type="button" onclick="count(${i},'${k}',1)">＋</button></div></div>`).join('')}</div>
     <details class="gl-memo" ${h.memo ? 'open' : ''}><summary>メモ</summary><textarea oninput="setH(${i},'memo',this.value,true)" placeholder="風、ライ、狙い、気づいたこと">${esc(h.memo || '')}</textarea></details>
-    <div class="btns">${(() => { const o = holeOrder(), pos = o.indexOf(i), prev = o[pos - 1], next = o[pos + 1];
-      return `<button class="btn" onclick="liveField='score';goHole(${prev ?? -1})" ${prev == null ? 'disabled' : ''}>← 前</button>${next != null ? `<button class="btn primary" onclick="liveField='score';goHole(${next})">次のホール →</button>` : `<button class="btn primary" onclick="liveMode=false;renderEdit();toast('振り返りを書いて保存してください')">上がり</button>`}`; })()}</div>
-    ${draft.layout ? `<a class="layout-link" href="${esc(draft.layout)}" target="_blank" style="margin-top:10px">コースマップ（楽天GORA）↗</a>` : ''}
+    <div class="gl-bottom"><button type="button" class="gl-card" onclick="openLiveCard()">スコアカード</button>${draft.layout ? `<a class="gl-card ghost" href="${esc(draft.layout)}" target="_blank">コースマップ ↗</a>` : '<span></span>'}</div>
     <div class="btns"><button class="btn" onclick="liveMode=false;renderEdit()">全体を見る・振り返りを書く</button></div>
     <label style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:12px;letter-spacing:0"><input type="checkbox" style="width:auto" ${draft.startIn ? 'checked' : ''} onchange="draft.startIn=this.checked;saveLiveLocal();renderLive()">${esc(nineName(1))}からスタート</label>
     <p class="muted" id="live-status" style="text-align:center;margin-top:10px"></p>
     <p style="text-align:center;margin-top:14px"><button class="btn danger" style="font-size:12px;padding:6px 12px" onclick="discardLive()">このラウンドの記録をやめて消す</button></p>
   </div>`, true);
   updateLiveStatus();
+  const strip = $('#gl-strip'), cur = strip && strip.querySelector('.hc.on');
+  if (cur) strip.scrollLeft = cur.offsetLeft - strip.clientWidth / 2 + cur.offsetWidth / 2;
   if (lastBump) { const el = document.querySelector(`.gl-f[data-k="${lastBump}"] b`); if (el) el.classList.add('pop'); lastBump = null; }
 }
 // ラウンド中のスコアカード（ホールを押すとそこへ）
