@@ -524,7 +524,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13j';
+const APP_VERSION = '2026-11-13k';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1260,17 +1260,15 @@ const WX_IC = { 晴れ: SV('<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M
   雨: SV('<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v7a2 2 0 0 1-4 0"/>'),
   雪: SV('<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/>') };
 function setupSet(k, v) { draft[k] = v; renderSetupKeep(); }
-function renderSetupKeep() { const y = $('#sheet').scrollTop; renderSetup(); $('#sheet').scrollTop = y; }
-function renderSetup() {
+function renderSetupKeep() { rerender(); }
+function setupFields() {
   const d = draft, c = courseOf(d.course);
   const nines = (c && c.nines) || (sorted().reverse().find(r => r.course === d.course && r.nines) || {}).nines || ['OUT', 'IN'];
   d.nines = d.nines && d.nines.length === 2 ? d.nines : [...nines];
   const front = d.startIn ? d.nines[1] : d.nines[0], back = d.startIn ? d.nines[0] : d.nines[1];
   const courses = [...new Set([...db.courses.map(x => x.name), ...db.rounds.map(r => r.course)])];
   const row = (ic, label, body, req) => `<div class="st-row"><span class="st-ic">${SET_IC[ic]}</span><span class="st-l">${label}${req ? '<em>必須</em>' : ''}</span><div class="st-v">${body}</div></div>`;
-  openSheet(`<div class="st">
-    <div class="st-head"><h3>ラウンド情報</h3><button type="button" class="st-cancel" onclick="setupMode=false;closeSheet()">キャンセル</button></div>
-    <div class="st-course"><input list="courses" value="${esc(d.course)}" placeholder="コース名を入れる" onchange="draft.course=this.value;draft.nines=null;fillFromCourse()"><datalist id="courses">${courses.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+  return `    <div class="st-course"><input list="courses" value="${esc(d.course)}" placeholder="コース名を入れる" onchange="draft.course=this.value;draft.nines=null;fillFromCourse()"><datalist id="courses">${courses.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
       ${c ? `<span class="st-ok">パー・ヤード登録済み</span>` : d.course ? `<span class="st-no">パーは回りながら選べます</span>` : ''}</div>
     <div class="st-sec">コース情報</div>
     <div class="st-card">
@@ -1283,7 +1281,12 @@ function renderSetup() {
     </div>
     <div class="st-sec">MYギア</div>
     <div class="st-card"><button type="button" class="st-row st-link" onclick="openBag()"><span class="st-ic">${SET_IC.bag}</span><span class="st-l">クラブセッティング</span><span class="st-v st-txt">${myBag().length}本 ›</span></button></div>
-    <button class="btn primary st-go" onclick="setupMode=false;startLive()">回りながら記録する</button>
+`;
+}
+function renderSetup() {
+  openSheet(`<div class="st">
+    <div class="st-head"><h3>ラウンド情報</h3><button type="button" class="st-cancel" onclick="setupMode=false;closeSheet()">キャンセル</button></div>
+    ${setupFields()}    <button class="btn primary st-go" onclick="setupMode=false;startLive()">回りながら記録する</button>
     <button class="btn st-later" onclick="setupMode=false;renderEdit()">あとでまとめて入力する</button>
   </div>`, true);
 }
@@ -1325,8 +1328,7 @@ function holeHTML(h, i) {
       <div><span class="mini-l">ヤード</span><input inputmode="numeric" value="${h.yd ?? ''}" oninput="setH(${i},'yd',num(this.value)??undefined,true)"></div>
       <div><span class="mini-l">HC</span><input inputmode="numeric" value="${h.hc ?? ''}" oninput="setH(${i},'hc',num(this.value)??undefined,true)"></div>
     </div>
-    <div class="more" style="grid-template-columns:auto 1fr">
-      <div><span class="mini-l">ピン</span>${pinHTML(i, h.pin)}</div>
+    <div class="more" style="grid-template-columns:1fr">
       <div><span class="mini-l">メモ</span><input value="${esc(h.memo || '')}" oninput="setH(${i},'memo',this.value,true)" style="text-align:left" placeholder="2打目つま先上がり、右OB など"></div>
     </div>
   </div>`;
@@ -1347,14 +1349,8 @@ function renderEdit() {
   openSheet(`<h3 style="margin-bottom:4px">${d.id ? 'ラウンドを書き直す' : 'ラウンドを記録'}</h3>
     <p class="muted">スコアカードのスクショをClaudeに送れば、代わりに入れることもできます。</p>
     <button class="live-banner" onclick="startLive()">回りながら記録する（1ホールずつ）</button>
+    <div class="st">${setupFields()}</div>
     <div class="form">
-      <div class="two">
-        <div><label>日付</label><input type="date" value="${d.date}" onchange="draft.date=this.value"></div>
-        <div><label>ティー</label><select onchange="draft.tee=this.value;if(courseOf(draft.course))fillFromCourse()"><option value=""></option>${TEES.map(t => `<option ${d.tee === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      </div>
-      <label>コース</label><input list="courses" value="${esc(d.course)}" onchange="draft.course=this.value;fillFromCourse()" placeholder="〇〇カントリークラブ">
-      <datalist id="courses">${courses.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
-      <label>天気</label>${segHTML(WEATHER, d.weather, "v=>{draft.weather=draft.weather===v?'':v;renderEdit()}")}
       <label>ホールごと</label>
       <div id="holes">${d.holes.slice(0, 9).map(holeHTML).join('')}${halfSum(0, 9)}${d.holes.slice(9).map((h, i) => holeHTML(h, i + 9)).join('')}${halfSum(9, 18)}</div>
       <label>良かったこと</label><textarea oninput="draft.good=this.value">${esc(d.good)}</textarea>
