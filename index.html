@@ -293,6 +293,7 @@
   .gl-strip .hc { flex: none; width: 52px; padding: 6px 0 5px; }
   .gl-strip .hc b { font-size: 17px; }
   .gl-strip .hc small { font-size: 10px; }
+  .hc em { font-style: normal; font-size: 8.5px; font-weight: 700; letter-spacing: .02em; opacity: .8; }
   .gl-lab { flex: none; writing-mode: vertical-rl; font-size: 10px; font-weight: 700; color: #a2a8a5; display: flex; align-items: center; justify-content: center; padding: 0 2px; }
   .gl-sub { font-size: 11px; color: #a2a8a5; margin-top: 4px; }
   .gl-pars { display: flex; align-items: center; gap: 4px; }
@@ -484,7 +485,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13d';
+const APP_VERSION = '2026-11-13e';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1401,7 +1402,7 @@ function holeChip(k) {
   const h = draft.holes[k], on = k === liveIdx, done = h.score != null;
   const d = done && h.par ? h.score - h.par : null;
   return `<button type="button" class="hc ${on ? 'on' : ''} ${done ? 'done' : ''}" onclick="liveField='score';goHole(${k})">
-    <b>${(k % 9) + 1}</b><small>${done ? h.score + (h.putts != null ? '/' + h.putts : '') : h.par ? 'P' + h.par : ''}</small>${done && d != null ? `<i class="${d < 0 ? 'u' : d === 0 ? 'e' : ''}"></i>` : ''}</button>`;
+    <em>${h.par ? 'PAR' + h.par : 'PAR?'}</em><b>${(k % 9) + 1}</b><small>${done ? h.score + (h.putts != null ? '/' + h.putts : '') : ''}</small>${done && d != null ? `<i class="${d < 0 ? 'u' : d === 0 ? 'e' : ''}"></i>` : ''}</button>`;
 }
 function renderLive() {
   const i = liveIdx, h = draft.holes[i];
