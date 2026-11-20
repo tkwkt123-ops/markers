@@ -620,17 +620,20 @@ function tab(v) {
 /* ================= 計算 ================= */
 const sorted = () => [...db.rounds].sort((a, b) => a.date.localeCompare(b.date));
 function scoreOf(h, from, to) { const xs = h.slice(from, to).map(x => x.score); return xs.every(v => v != null) && xs.length ? sum(xs) : null; }
-const total = r => r.holes.length === 18 ? scoreOf(r.holes, 0, 18) : r.total ?? null;
+// ハーフ（r.half）は holes が9つ。18ホールのグラフ・ベスト・平均には入れない
+const total = r => r.half ? null : r.holes.length === 18 ? scoreOf(r.holes, 0, 18) : r.total ?? null;
+const shown = r => r.half ? scoreOf(r.holes, 0, 9) : total(r);
+const halfPutts = r => { const p = r.holes.slice(0, 9).map(h => h.putts); return p.every(v => v != null) ? sum(p) : null; };
 const outS = r => scoreOf(r.holes, 0, 9);
 const inS = r => scoreOf(r.holes, 9, 18);
-function putts(r) { const p = r.holes.map(h => h.putts); return p.length === 18 && p.every(v => v != null) ? sum(p) : r.putts ?? null; }
-const hasPar = r => r.holes.length === 18 && r.holes.every(h => h.par);
+function putts(r) { if (r.half) return null; const p = r.holes.map(h => h.putts); return p.length === 18 && p.every(v => v != null) ? sum(p) : r.putts ?? null; }
+const hasPar = r => r.holes.length === (r.half ? 9 : 18) && r.holes.every(h => h.par);
 function stats(r) {
   const H = r.holes, s = {};
   if (hasPar(r)) {
     s.par = sum(H.map(h => h.par));
     const withP = H.filter(h => h.putts != null);
-    if (withP.length === 18) {
+    if (withP.length === H.length) {
       s.gir = H.filter(h => h.score - h.putts <= h.par - 2).length;
       s.bon = H.filter(h => h.score - h.putts <= h.par - 1).length;
       s.three = H.filter(h => h.putts >= 3).length;
@@ -756,7 +759,7 @@ function renderTrend(all, best, o = SCORE_CHART) {
 }
 
 function coinHTML(r, best, big) {
-  const t = total(r), c = coinColor(t), isBest = best && best.id === r.id;
+  const t = shown(r), c = coinColor(r.half && t != null ? t * 2 : t), isBest = best && best.id === r.id;
   const id = 'cp' + r.id.replace(/\W/g, '') + (big ? 'b' : 's');
   const name = shortCourse(r.course).slice(0, 11);
   const ink = '#3d4441', cream = '#ffffff';
@@ -778,6 +781,7 @@ function coinHTML(r, best, big) {
       <g fill="${cream}" opacity=".9"><circle cx="35" cy="33" r="5"/><circle cx="41" cy="30" r="6.5"/><circle cx="47" cy="33" r="4.5"/><rect x="31" y="33" width="20" height="4.5" rx="2.2"/></g>
       <path d="M 18 66 Q 26 62 34 66 T 50 66 T 66 66 T 82 66 V 90 H 18 Z" fill="${ink}" opacity=".22"/>
       <path d="M 18 72 Q 26 68 34 72 T 50 72 T 66 72 T 82 72 V 90 H 18 Z" fill="${ink}" opacity=".18"/>
+      ${r.half ? `<text x="50" y="74" font-size="7" font-weight="700" fill="${cream}" letter-spacing="1.5" text-anchor="middle" font-family="DM Sans, sans-serif">HALF</text>` : ''}
     </g>
     
     <text x="50" y="59" font-size="${String(t ?? '').length > 2 ? 22 : 25}" font-weight="700" fill="${cream}" text-anchor="middle" font-family="DM Sans, sans-serif">${t ?? '–'}</text>
@@ -834,7 +838,7 @@ function scorecard(r, from, to, label) {
 const nine = (r, k) => (r.nines && r.nines[k]) || (k ? 'IN' : 'OUT');
 function openRound(id) {
   const r = db.rounds.find(x => x.id === id); if (!r) return;
-  const s = stats(r), t = total(r), p = putts(r), best = bestRound();
+  const s = stats(r), t = shown(r), p = r.half ? halfPutts(r) : putts(r), best = bestRound();
   const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
   const kpis = [
     p != null && `<div class="kpi"><b>${p}</b><span>パット</span></div>`,
@@ -854,13 +858,13 @@ function openRound(id) {
   openSheet(`
     <div class="detail-head">${coinHTML(r, best, true)}
       <div><div class="muted">${r.date.replace(/-/g, '/')}</div><h3>${esc(r.course)}</h3>
-        <div class="halves">${(r.startIn ? [[1, inS(r)], [0, outS(r)]] : [[0, outS(r)], [1, inS(r)]]).map(([k, v]) => `<span>${esc(nine(r, k))} <b>${v ?? '–'}</b></span>`).join('')}${s.par ? `<span>${t - s.par >= 0 ? '+' : ''}${t - s.par}</span>` : ''}</div>
+        <div class="halves">${(r.half ? [[0, outS(r)]] : r.startIn ? [[1, inS(r)], [0, outS(r)]] : [[0, outS(r)], [1, inS(r)]]).map(([k, v]) => `<span>${esc(nine(r, k))} <b>${v ?? '–'}</b></span>`).join('')}${r.half ? '<span>ハーフ</span>' : ''}${s.par && t != null ? `<span>${t - s.par >= 0 ? '+' : ''}${t - s.par}</span>` : ''}</div>
         <div class="chips">${chips}</div></div></div>
     ${noteHTML(r)}
     ${kpis ? `<div class="kpis">${kpis}</div>` : ''}
     ${dist}
     <div style="height:12px"></div>
-    ${r.startIn ? scorecard(r, 9, 18, nine(r, 1)) + scorecard(r, 0, 9, nine(r, 0)) : scorecard(r, 0, 9, nine(r, 0)) + scorecard(r, 9, 18, nine(r, 1))}
+    ${r.half ? scorecard(r, 0, 9, nine(r, 0)) : r.startIn ? scorecard(r, 9, 18, nine(r, 1)) + scorecard(r, 0, 9, nine(r, 0)) : scorecard(r, 0, 9, nine(r, 0)) + scorecard(r, 9, 18, nine(r, 1))}
     ${r.layout ? `<a class="layout-link" href="${esc(r.layout)}" target="_blank">ホールのレイアウト（楽天GORA）↗</a>` : ''}
     ${r.links.length ? `<div class="muted" style="margin-top:8px">${r.links.map(u => `<a href="${esc(u)}" target="_blank">${u.includes('notion') ? '以前のNotionのページ' : esc(u)}</a>`).join('　')}</div>` : ''}
     <div class="btns"><button class="btn" onclick="openEdit('${r.id}')">書き直す</button><button class="btn danger" onclick="delRound('${r.id}')">消す</button></div>`);
@@ -1219,7 +1223,7 @@ async function delPractice(id) {
 function renderGoods() {
   const items = [
     ...db.practices.filter(p => p.good).map(p => ({ date: p.date, label: `練習${p.place ? '・' + p.place : ''}`, st: p.id, sd: p.date, g: p.good, open: `openPractice('${p.id}')`, ph: (p.photos || [])[0] })),
-    ...db.rounds.filter(r => r.good).map(r => ({ date: r.date, label: `${shortCourse(r.course)}（${total(r) ?? '–'}）`, flag: true, g: r.good, open: `openRound('${r.id}')` })),
+    ...db.rounds.filter(r => r.good).map(r => ({ date: r.date, label: `${shortCourse(r.course)}（${shown(r) ?? '–'}${r.half ? '・ハーフ' : ''}）`, flag: true, g: r.good, open: `openRound('${r.id}')` })),
   ].sort((a, b) => b.date.localeCompare(a.date));
   $('#goods').innerHTML = items.length ? items.map(x => `<div class="good-item" onclick="${x.open}"><div class="gb"><div class="t">${x.st ? sticker(x.st, 22, x.sd) : ''}${x.date.replace(/-/g, '/')}　${esc(x.label)}</div><div class="g">${esc(x.g)}</div></div>${x.ph ? `<div class="thumb"><img data-thumb="${esc(x.ph)}" alt=""></div>` : ''}</div>`).join('')
     : '<div class="empty">練習やラウンドの「よかったこと」がここにたまります</div>';
@@ -1240,7 +1244,7 @@ function openEdit(id) {
   if (!id && liveState()) { resumeLive(); toast('ラウンド中の続きを開きました'); return; }
   const r = id && db.rounds.find(x => x.id === id);
   draft = r ? JSON.parse(JSON.stringify(r)) : { id: null, date: new Date().toLocaleDateString('sv-SE'), course: '', tee: 'レギュラー', weather: '', holes: blankHoles(), good: '', issue: '', links: [] };
-  if (draft.holes.length !== 18) draft.holes = blankHoles();
+  if (draft.holes.length < 18) draft.holes = draft.holes.concat(blankHoles().slice(draft.holes.length));
   if (r) renderEdit(); else { setupMode = true; renderSetup(); }
 }
 /* ===== ラウンド情報の設定（回る前。GDOの「ラウンド情報設定」と同じ並び） ===== */
@@ -1267,6 +1271,7 @@ function nineSelect(which, val, opts) {
 function setNine(which, v) {
   const d = draft, c = courseOf(d.course), base = (c && c.nines) || null;
   if (!d.nines || d.nines.length !== 2) d.nines = base ? [...base] : ['OUT', 'IN'];
+  if (d.half) { d.nines = [v, d.nines[1]]; d.startIn = false; if (c) fillFromCourse(); else rerender(); return; }
   let front = d.startIn ? d.nines[1] : d.nines[0], back = d.startIn ? d.nines[0] : d.nines[1];
   // 前半を選ぶと後半は入れ替え。後半は前半と同じコースも選べる（OUT・OUTなど）
   if (which === 'front') { if (v === back && front !== back) back = front; front = v; } else back = v;
@@ -1275,11 +1280,16 @@ function setNine(which, v) {
   if (c) fillFromCourse(); else rerender();
 }
 function setupSet(k, v) { draft[k] = v; renderSetupKeep(); }
+function setHalf(on) {
+  const d = draft; d.half = on || undefined;
+  if (on && d.startIn) { d.nines = [d.nines[1], d.nines[0]]; d.startIn = false; }
+  if (courseOf(d.course)) fillFromCourse(); else rerender();
+}
 function renderSetupKeep() { rerender(); }
 function setupFields() {
   const d = draft, c = courseOf(d.course);
   const nines = (c && c.nines) || (sorted().reverse().find(r => r.course === d.course && r.nines) || {}).nines || ['OUT', 'IN'];
-  d.nines = d.nines && d.nines.length === 2 ? d.nines : [...nines];
+  d.nines = d.nines && d.nines.length === 2 ? d.nines : d.nines && d.nines.length === 1 ? [d.nines[0], nines.find(n => n !== d.nines[0]) || nines[1]] : [...nines];
   const front = d.startIn ? d.nines[1] : d.nines[0], back = d.startIn ? d.nines[0] : d.nines[1];
   const nineOpts = [...new Set([...nines, ...d.nines, 'OUT', 'IN', '東', '西', '南', '北', '中'])];
   const courses = [...new Set([...db.courses.map(x => x.name), ...db.rounds.map(r => r.course)])];
@@ -1291,8 +1301,9 @@ function setupFields() {
       ${row('date', 'ラウンド日', `<input type="date" value="${d.date}" onchange="draft.date=this.value">`)}
       ${row('weather', '天気', `<div class="st-wx">${['晴れ', '曇り', '雨', '雪'].map(w => `<button type="button" class="${d.weather === w ? 'on' : ''}" onclick="setupSet('weather', draft.weather==='${w}'?'':'${w}')">${WX_IC[w]}</button>`).join('')}</div>`)}
       ${row('wind', '風', segHTML(WINDS, d.wind || '', "v=>setupSet('wind', draft.wind===v?'':v)", 'sm'))}
-      ${row('nine', '前半コース', nineSelect('front', front, nineOpts), true)}
-      ${row('nine', '後半コース', nineSelect('back', back, nineOpts), true)}
+      ${row('nine', 'ホール数', segHTML(['18ホール', 'ハーフ'], d.half ? 'ハーフ' : '18ホール', "v=>setHalf(v==='ハーフ')", 'sm'))}
+      ${d.half ? row('nine', 'コース', nineSelect('front', front, nineOpts), true) : `${row('nine', '前半コース', nineSelect('front', front, nineOpts), true)}
+      ${row('nine', '後半コース', nineSelect('back', back, nineOpts), true)}`}
       ${row('tee', 'ティー', segHTML(TEES, d.tee || '', "v=>{draft.tee=v;if(courseOf(draft.course))fillFromCourse();else renderSetupKeep()}", 'sm'), true)}
     </div>
     <div class="st-sec">MYギア</div>
@@ -1356,7 +1367,7 @@ function halfSum(from, to) {
   const H = draft.holes.slice(from, to);
   const s = H.every(h => h.score != null) ? sum(H.map(h => h.score)) : '–';
   const p = H.every(h => h.putts != null) ? sum(H.map(h => h.putts)) : '–';
-  return `<div class="half-sum" id="hs${from}">${from ? 'IN' : 'OUT'} <b>${s}</b>　パット ${p}</div>`;
+  return `<div class="half-sum" id="hs${from}">${esc(nineName(from ? 1 : 0))} <b>${s}</b>　パット ${p}</div>`;
 }
 function renderEdit() {
   const d = draft;
@@ -1368,7 +1379,7 @@ function renderEdit() {
     <div class="st">${setupFields()}</div>
     <div class="form">
       <label>ホールごと</label>
-      <div id="holes">${d.holes.slice(0, 9).map(holeHTML).join('')}${halfSum(0, 9)}${d.holes.slice(9).map((h, i) => holeHTML(h, i + 9)).join('')}${halfSum(9, 18)}</div>
+      <div id="holes">${d.holes.slice(0, 9).map(holeHTML).join('')}${halfSum(0, 9)}${d.half ? '' : d.holes.slice(9).map((h, i) => holeHTML(h, i + 9)).join('') + halfSum(9, 18)}</div>
       <label>良かったこと</label><textarea oninput="draft.good=this.value">${esc(d.good)}</textarea>
       <label>課題・反省</label><textarea oninput="draft.issue=this.value">${esc(d.issue)}</textarea>
       <div class="btns"><button class="btn" onclick="${d.id ? `openRound('${d.id}')` : d.live ? 'closeSheet()' : 'closeSheet()'}">${d.live ? 'あとで続ける' : 'やめる'}</button><button class="btn primary" onclick="saveRound(this)">保存</button></div>
@@ -1409,11 +1420,12 @@ async function saveRound(btn) {
   const wasLive = d.live; delete d.live;
   const isNew = !d.id;
   if (isNew) { d.id = 'r' + d.date.replace(/-/g, ''); let n = 2; while (db.rounds.some(r => r.id === d.id)) d.id = 'r' + d.date.replace(/-/g, '') + '-' + n++; }
-  const t = scoreOf(d.holes, 0, 18);
+  const t = scoreOf(d.holes, 0, d.half ? 9 : 18);
+  const out = d.half ? { ...d, holes: d.holes.slice(0, 9), nines: d.nines ? [d.nines[0]] : undefined, startIn: undefined } : { ...d, half: undefined };
   const done = busy(btn, '保存中…');
-  const ok = await commit(db => { db.rounds = db.rounds.filter(r => r.id !== d.id); db.rounds.push(d); }, `${isNew ? 'ラウンドを記録' : 'ラウンドを修正'}：${d.date} ${d.course}${t ? ' ' + t : ''}`);
+  const ok = await commit(db => { db.rounds = db.rounds.filter(r => r.id !== d.id); db.rounds.push(JSON.parse(JSON.stringify(out))); }, `${isNew ? 'ラウンドを記録' : 'ラウンドを修正'}：${d.date} ${d.course}${d.half ? ' ハーフ' : ''}${t ? ' ' + t : ''}`);
   done();
-  if (ok) { if (wasLive) { localStorage.removeItem(LIVE_KEY); liveMode = false; clearRemoteLive(); } toast('保存しました'); openRound(d.id); }
+  if (ok) { if (wasLive) { localStorage.removeItem(LIVE_KEY); liveMode = false; clearRemoteLive(); renderHome(); } toast('保存しました'); openRound(d.id); }
   else if (wasLive) { d.live = true; if (isNew) d.id = null; saveLiveLocal(); }
 }
 
@@ -1488,7 +1500,7 @@ function bump(i, k, d) {
   setH(i, k, (['ob', 'bunker', 'pen'].includes(k) && !v) ? undefined : v);
 }
 function goHole(k) {
-  if (k < 0 || k > 17) return;
+  if (k < 0 || k > (draft.half ? 8 : 17)) return;
   const dir = k > liveIdx ? 'slide-l' : 'slide-r';
   liveIdx = k; saveLiveLocal(); pushLive(); renderLive(); $('#sheet').scrollTop = 0;
   const f = $('#sheet-body .form'); if (f) { f.classList.add(dir); }
@@ -1506,8 +1518,8 @@ const TEE_IC = {
   on: tic('<ellipse cx="14" cy="18" rx="10" ry="3.5"/><path d="M15 18V3l6 3-6 3"/>'),
 };
 const nineName = (k) => (draft.nines && draft.nines[k]) || (k ? 'IN' : 'OUT');
-const holeLabel = i => ((i < 9) !== !!draft.startIn ? '前半' : '後半');
-function holeOrder() { return draft.startIn ? [...Array(9).keys()].map(x => x + 9).concat([...Array(9).keys()]) : [...Array(18).keys()]; }
+const holeLabel = i => draft.half ? 'ハーフ' : ((i < 9) !== !!draft.startIn ? '前半' : '後半');
+function holeOrder() { if (draft.half) return [...Array(9).keys()]; return draft.startIn ? [...Array(9).keys()].map(x => x + 9).concat([...Array(9).keys()]) : [...Array(18).keys()]; }
 function keyPress(n) {
   const i = liveIdx;
   if (n === 'ten') { liveTen = !liveTen; renderLive(); return; }
@@ -1532,10 +1544,10 @@ function holeChip(k) {
 }
 function renderLive() {
   const i = liveIdx, h = draft.holes[i];
-  const done = draft.holes.filter(x => x.score != null);
+  const done = draft.holes.slice(0, draft.half ? 9 : 18).filter(x => x.score != null);
   const sc = sum(done.map(x => x.score)), pt = sum(done.filter(x => x.putts != null).map(x => x.putts));
   const over = done.length && done.every(x => x.par) ? sc - sum(done.map(x => x.par)) : null;
-  const halves = draft.startIn ? [9, 0] : [0, 9];
+  const halves = draft.half ? [0] : draft.startIn ? [9, 0] : [0, 9];
   const tee = [['奥', 'オーバー', TEE_IC.over], ['左', '左', TEE_IC.left], ['◯', h.par === 3 ? 'ワンオン' : 'FWキープ', h.par === 3 ? TEE_IC.on : TEE_IC.fw], ['右', '右', TEE_IC.right], ['手前', 'ショート', TEE_IC.short]];
   openSheet(`<div class="form gl">
     <div class="gl-top"><div><b>${esc(shortCourse(draft.course))}</b><span class="muted">${draft.date.replace(/-/g, '/')}</span></div></div>
@@ -1557,7 +1569,7 @@ function renderLive() {
     <details class="gl-memo" ${h.memo ? 'open' : ''}><summary>メモ</summary><textarea oninput="setH(${i},'memo',this.value,true)" placeholder="風、ライ、狙い、気づいたこと">${esc(h.memo || '')}</textarea></details>
     <div class="gl-bottom"><button type="button" class="gl-card" onclick="openLiveCard()">スコアカード</button></div>
     <div class="btns"><button class="btn" onclick="liveMode=false;renderEdit()">全体を見る・振り返りを書く</button></div>
-    <label style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:12px;letter-spacing:0"><input type="checkbox" style="width:auto" ${draft.startIn ? 'checked' : ''} onchange="draft.startIn=this.checked;saveLiveLocal();renderLive()">${esc(nineName(1))}からスタート</label>
+    ${draft.half ? '' : `<label style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:12px;letter-spacing:0"><input type="checkbox" style="width:auto" ${draft.startIn ? 'checked' : ''} onchange="draft.startIn=this.checked;saveLiveLocal();renderLive()">${esc(nineName(1))}からスタート</label>`}
     <p class="muted" id="live-status" style="text-align:center;margin-top:10px"></p>
     <p style="text-align:center;margin-top:14px"><button class="btn danger" style="font-size:12px;padding:6px 12px" onclick="discardLive()">このラウンドの記録をやめて消す</button></p>
   </div>`, true);
@@ -1573,9 +1585,9 @@ function openLiveCard() {
       <tr><td>PAR</td>${H.map(x => `<td>${x.par ?? ''}</td>`).join('')}<td>${tot('par')}</td></tr>
       <tr class="s"><td>スコア</td>${H.map((x, j) => `<td onclick="liveField='score';goHole(${st + j})">${x.score != null ? mark(x) : '<span class="empty">・</span>'}</td>`).join('')}<td><b>${tot('score')}</b></td></tr>
       <tr><td>PUTT</td>${H.map(x => `<td>${x.putts ?? ''}</td>`).join('')}<td>${tot('putts')}</td></tr></table>`; };
-  const done = draft.holes.filter(x => x.score != null);
-  openSheet(`<div class="gl-top"><div><b>スコアカード</b><span class="muted">${done.length}/18ホール入力済み</span></div><button type="button" class="gl-card" onclick="renderLive()">入力に戻る</button></div>
-    ${(draft.startIn ? [9, 0] : [0, 9]).map(row).join('')}
+  const done = draft.holes.slice(0, draft.half ? 9 : 18).filter(x => x.score != null);
+  openSheet(`<div class="gl-top"><div><b>スコアカード</b><span class="muted">${done.length}/${draft.half ? 9 : 18}ホール入力済み</span></div><button type="button" class="gl-card" onclick="renderLive()">入力に戻る</button></div>
+    ${(draft.half ? [0] : draft.startIn ? [9, 0] : [0, 9]).map(row).join('')}
     <div class="gl-total" style="justify-content:center;margin-top:8px"><b>${done.length ? sum(done.map(x => x.score)) : '–'}</b><span>${done.filter(x => x.putts != null).length ? sum(done.filter(x => x.putts != null).map(x => x.putts)) : ''}</span></div>`, true);
 }
 async function discardLive() {
@@ -1635,7 +1647,7 @@ function renderTendency() {
   const pctv = x => x ? Math.round(x[0] / x[1] * 100) : null;
   // パー3・4・5ごとの平均オーバー
   const by = { 3: [], 4: [], 5: [] };
-  rs.forEach(r => { if (hasPar(r)) r.holes.forEach(h => by[h.par]?.push(h.score - h.par)); });
+  sorted().filter(r => shown(r) != null && hasPar(r)).forEach(r => r.holes.forEach(h => by[h.par]?.push(h.score - h.par)));
   const parRows = [3, 4, 5].filter(p => by[p].length).map(p => { const a = sum(by[p]) / by[p].length; return `<div class="bar"><span>パー${p}</span><div class="track"><div class="fill" style="width:${Math.min(100, a / 3 * 100)}%;background:${['', '', '', '#9cc3d9', '#79a694', '#f4b097'][p]}"></div></div><b>+${a.toFixed(2)}</b></div>`; }).join('');
   // コースごと
   const cs = {};

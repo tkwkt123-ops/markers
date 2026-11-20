@@ -50,7 +50,7 @@ async function dayImage(day, info) {
   const S = 120, dc = new DrawContext(); dc.size = new Size(S, S); dc.opaque = false; dc.respectScreenScale = true;
   const circle = (r, color) => { dc.setFillColor(new Color(color)); dc.fillEllipse(new Rect(S / 2 - r, S / 2 - r, r * 2, r * 2)); };
   const label = (t, color, size, bold) => { dc.setTextAlignedCenter(); dc.setTextColor(new Color(color)); dc.setFont(bold ? Font.boldRoundedSystemFont(size) : Font.mediumRoundedSystemFont(size)); dc.drawTextInRect(String(t), new Rect(0, S / 2 - size * 0.62, S, size * 1.4)); };
-  if (info.round) { circle(50, '#ffffff'); circle(40, coinColor(info.round)); label(info.round, '#ffffff', 38, true); }
+  if (info.round) { circle(50, '#ffffff'); circle(40, coinColor(info.half ? info.round * 2 : info.round)); label(info.round, '#ffffff', 38, true); }
   else if (info.sticker) { dc.drawImageInRect(await stickerImage(info.sticker), new Rect(4, 4, S - 8, S - 8)); }
   else if (info.rest) { circle(46, '#e7ebe9'); dc.setFillColor(new Color('#9dbcaf')); dc.fillEllipse(new Rect(38, 34, 44, 44)); dc.setFillColor(new Color('#e7ebe9')); dc.fillEllipse(new Rect(50, 28, 40, 40)); }
   else label(day.getDate(), info.future ? '#c9cccb' : '#a2a8a5', 36, info.today);
@@ -79,6 +79,7 @@ async function calendarWidget() {
     const p = ps.filter(x => x.date === k).pop();
     const info = { today: isToday, future: k > today, rest: rests.includes(k),
       round: r ? r.holes.reduce((a, h) => a + h.score, 0) : null,
+      half: !!(r && r.half),
       sticker: p ? `m${+k.slice(5, 7)}-${hashStr(p.id) % 5}.png` : null };
     const col = row.addStack(); col.layoutVertically(); col.size = new Size(40, 66);
     const lr = col.addStack(); lr.size = new Size(40, 14); lr.addSpacer(); const lt = text(lr, WD[i], 11, isToday ? C.sage : C.soft, isToday ? 'bold' : 'medium'); lt.centerAlignText(); lr.addSpacer();
@@ -131,7 +132,7 @@ w.refreshAfterDate = new Date(Date.now() + 30 * 60 * 1000);
 if (!db) {
   text(w, 'Markers', 14, C.sage, 'bold'); w.addSpacer(6); text(w, err, 12, C.soft);
 } else {
-  const ps = db.practices || [], rs = (db.rounds || []).filter(r => r.holes && r.holes.every(h => h.score != null));
+  const ps = db.practices || [], rs = (db.rounds || []).filter(r => !r.half && r.holes && r.holes.every(h => h.score != null));
   const total = r => r.holes.reduce((a, h) => a + h.score, 0);
   const mp = ps.filter(p => p.date.startsWith(month));
   const hours = Math.round(mp.reduce((a, p) => a + (p.minutes || 0), 0) / 6) / 10;
