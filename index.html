@@ -525,7 +525,7 @@
 
 <script>
 /* ================= 設定と保存（GitHubの非公開リポジトリ） ================= */
-const APP_VERSION = '2026-11-13m';
+const APP_VERSION = '2026-11-25a';
 const CFG_KEY = 'markers-config';
 const CACHE_KEY = 'markers-cache';
 const LIVE_KEY = 'markers-live';  // ラウンド中の入力（電波がなくても消えないよう端末に置く）
@@ -1475,7 +1475,7 @@ function updateLiveStatus() {
   const t = liveSyncedAt && liveSyncedHash === localStorage.getItem(LIVE_KEY);
   el.innerHTML = `この端末に保存済み　${t ? `${liveSyncedAt.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })} クラウドにも保存` : liveSyncing ? 'クラウドに送信中…' : '電波があるときにクラウドにも保存します'}`;
 }
-window.addEventListener('online', () => { pushLive(); flushPendingNotes(); });
+window.addEventListener('online', () => { pushLive(); flushPendingNotes(); syncPush(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pushLive(); });
 function startLive() {
   if (!draft.course.trim()) { toast('先にコースを入れてください'); return; }
@@ -1726,7 +1726,7 @@ function b64url(s) { const p = '='.repeat((4 - s.length % 4) % 4); return Uint8A
 async function editPushFile(fn, msg) {
   let sha = null, list = { subs: [] };
   try { const j = await gh(PUSH_FILE); sha = j.sha; list = JSON.parse(b64dec(j.content)); } catch (e) { if (e.status !== 404) throw e; }
-  fn(list);
+  if (fn(list) === false) return;
   await gh(PUSH_FILE, { method: 'PUT', body: JSON.stringify({ message: msg, content: b64enc(JSON.stringify(list, null, 1) + '\n'), ...(sha ? { sha } : {}) }) });
 }
 async function togglePush(btn) {
@@ -1735,17 +1735,39 @@ async function togglePush(btn) {
     if (await pushState() === 'on') {
       const reg = await navigator.serviceWorker.getRegistration(), sub = await reg.pushManager.getSubscription();
       await editPushFile(l => { l.subs = l.subs.filter(x => x.endpoint !== sub.endpoint); }, '通知をやめる');
-      await sub.unsubscribe(); toast('通知をやめました');
+      await sub.unsubscribe(); localStorage.removeItem(PUSH_EP_KEY); toast('通知をやめました');
     } else {
       if (await Notification.requestPermission() !== 'granted') { done(); toast('通知が許可されていません（設定アプリ→通知→Markers）'); return; }
       const reg = await navigator.serviceWorker.register('sw.js');
       await navigator.serviceWorker.ready;
       const sub = (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64url(VAPID_PUBLIC) })).toJSON();
       await editPushFile(l => { l.subs = l.subs.filter(x => x.endpoint !== sub.endpoint); l.subs.push({ ...sub, added: new Date().toISOString().slice(0, 10) }); }, '通知を受け取る端末を登録');
+      localStorage.setItem(PUSH_EP_KEY, sub.endpoint);
       toast('通知を入れました');
     }
   } catch (e) { toast('設定できませんでした（' + (e.status || e.message || 'エラー') + '）'); }
   done(); openSettings();
+}
+// iPhoneは知らないうちに通知先を切り替えることがあり、古い通知先には届かなくなる（2026-11に実際に起きた）。
+// 開くたびに今の通知先を確かめ、変わっていたら push.json を書き換える。通知先が消えていたら登録し直す
+const PUSH_EP_KEY = 'markers-push-endpoint';
+async function syncPush() {
+  if (!standalone() || !('PushManager' in window) || Notification.permission !== 'granted') return;
+  try {
+    const reg = await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    const old = localStorage.getItem(PUSH_EP_KEY);
+    if (!sub && !old) return; // 自分で通知をやめた
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64url(VAPID_PUBLIC) });
+    const j = sub.toJSON();
+    await editPushFile(l => {
+      if (l.subs.some(x => x.endpoint === j.endpoint)) return false;
+      l.subs = l.subs.filter(x => x.endpoint !== old);
+      l.subs.push({ ...j, added: new Date().toISOString().slice(0, 10) });
+    }, '通知を受け取る端末を更新');
+    localStorage.setItem(PUSH_EP_KEY, j.endpoint);
+  } catch (e) {}
 }
 async function pushHTML() {
   const st = await pushState();
